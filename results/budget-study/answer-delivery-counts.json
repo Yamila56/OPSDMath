@@ -1,0 +1,115 @@
+{
+  "answer17": {
+    "correct_numeric_strict_miss_at_128": 263,
+    "first_observed_only_by_512_correct": 103,
+    "unresolved_no_numeric_at_128": 12,
+    "parsed_wrong_at_128": 69,
+    "first_observed_only_by_512_wrong": 65
+  },
+  "answer29": {
+    "correct_numeric_strict_miss_at_128": 255,
+    "first_observed_only_by_512_wrong": 55,
+    "parsed_wrong_at_128": 66,
+    "unresolved_no_numeric_at_128": 24,
+    "first_observed_only_by_512_correct": 109,
+    "correct_numeric_and_strict_at_128": 3
+  },
+  "base": {
+    "first_observed_only_by_512_correct": 142,
+    "unresolved_no_numeric_at_128": 109,
+    "parsed_wrong_at_128": 35,
+    "correct_numeric_strict_miss_at_128": 177,
+    "first_observed_only_by_512_wrong": 49
+  },
+  "equation17": {
+    "correct_numeric_strict_miss_at_128": 188,
+    "first_observed_only_by_512_correct": 140,
+    "parsed_wrong_at_128": 47,
+    "unresolved_no_numeric_at_128": 76,
+    "first_observed_only_by_512_wrong": 60,
+    "correct_numeric_and_strict_at_128": 1
+  },
+  "equation29": {
+    "first_observed_only_by_512_correct": 174,
+    "parsed_wrong_at_128": 46,
+    "correct_numeric_strict_miss_at_128": 212,
+    "unresolved_no_numeric_at_128": 17,
+    "first_observed_only_by_512_wrong": 62,
+    "correct_numeric_and_strict_at_128": 1
+  },
+  "equationsft17": {
+    "parsed_wrong_at_128": 189,
+    "correct_numeric_and_strict_at_128": 162,
+    "first_observed_only_by_512_correct": 59,
+    "unresolved_no_numeric_at_128": 41,
+    "correct_numeric_strict_miss_at_128": 33,
+    "first_observed_only_by_512_wrong": 28
+  },
+  "equationsft29": {
+    "parsed_wrong_at_128": 194,
+    "unresolved_no_numeric_at_128": 41,
+    "correct_numeric_and_strict_at_128": 156,
+    "first_observed_only_by_512_correct": 59,
+    "correct_numeric_strict_miss_at_128": 39,
+    "first_observed_only_by_512_wrong": 23
+  },
+  "fixed17": {
+    "correct_numeric_strict_miss_at_128": 185,
+    "first_observed_only_by_512_wrong": 72,
+    "parsed_wrong_at_128": 59,
+    "unresolved_no_numeric_at_128": 15,
+    "first_observed_only_by_512_correct": 168,
+    "correct_numeric_and_strict_at_128": 13
+  },
+  "fixed29": {
+    "first_observed_only_by_512_correct": 198,
+    "first_observed_only_by_512_wrong": 67,
+    "parsed_wrong_at_128": 41,
+    "correct_numeric_strict_miss_at_128": 177,
+    "unresolved_no_numeric_at_128": 18,
+    "correct_numeric_and_strict_at_128": 11
+  },
+  "online17": {
+    "first_observed_only_by_512_wrong": 66,
+    "parsed_wrong_at_128": 62,
+    "first_observed_only_by_512_correct": 140,
+    "correct_numeric_and_strict_at_128": 30,
+    "correct_numeric_strict_miss_at_128": 196,
+    "unresolved_no_numeric_at_128": 18
+  },
+  "online29": {
+    "first_observed_only_by_512_correct": 173,
+    "first_observed_only_by_512_wrong": 66,
+    "parsed_wrong_at_128": 48,
+    "correct_numeric_and_strict_at_128": 23,
+    "correct_numeric_strict_miss_at_128": 183,
+    "unresolved_no_numeric_at_128": 19
+  },
+  "sft17": {
+    "first_observed_only_by_512_correct": 255,
+    "first_observed_only_by_512_wrong": 75,
+    "correct_numeric_and_strict_at_128": 97,
+    "parsed_wrong_at_128": 22,
+    "unresolved_no_numeric_at_128": 22,
+    "correct_numeric_strict_miss_at_128": 41
+  },
+  "sft29": {
+    "first_observed_only_by_512_correct": 252,
+    "first_observed_only_by_512_wrong": 85,
+    "correct_numeric_and_strict_at_128": 92,
+    "parsed_wrong_at_128": 25,
+    "correct_numeric_strict_miss_at_128": 37,
+    "unresolved_no_numeric_at_128": 21
+  },
+  "shortsft17": {
+    "parsed_wrong_at_128": 455,
+    "correct_numeric_and_strict_at_128": 55,
+    "unresolved_no_numeric_at_128": 2
+  },
+  "shortsft29": {
+    "parsed_wrong_at_128": 453,
+    "correct_numeric_and_strict_at_128": 57,
+    "unresolved_no_numeric_at_128": 1,
+    "first_observed_only_by_512_correct": 1
+  }
+}

@@ -1,9 +1,11 @@
 """Single-device Qwen3 short-answer SFT and on-policy self-distillation."""
 
 import argparse
+import hashlib
 import importlib.util
 import json
 import random
+import re
 import time
 from pathlib import Path
 
@@ -16,14 +18,24 @@ from gsm8k import read_rows, write_rows
 
 INSTRUCTION = "Solve briefly. End with Final answer: <number>."
 ROLLOUT_TEMPERATURE = 1.1
+EQUATIONS = re.compile(r"<<([^<>]+)>>")
 
 
-def prompt(tokenizer, row, privileged=False):
+def teacher_context(row, mode):
+    if mode == "full":
+        return row["solution"]
+    final = f"Final answer: {row['answer']}"
+    if mode == "answer":
+        return final
+    return "\n".join([*EQUATIONS.findall(row["solution"]), final])
+
+
+def prompt(tokenizer, row, privileged=False, context="full"):
     message = f"Problem: {row['problem']}\n\n"
     if privileged:
         message += (
             "Here is a reference solution to this problem:\n"
-            f"=== Reference Solution Begin ===\n{row['solution']}\n=== Reference Solution End ===\n\n"
+            f"=== Reference Solution Begin ===\n{teacher_context(row, context)}\n=== Reference Solution End ===\n\n"
             "After reading the reference, derive the answer in your own words.\n"
         )
     return tokenizer.apply_chat_template(
@@ -112,17 +124,17 @@ def memory(device):
     } if device.type == "cuda" else {}
 
 
-def check_prompts(tokenizer, row, output):
+def check_prompts(tokenizer, row, output, context):
     collator_path = Path(__file__).parent / "upstream" / "data_collator.py"
     spec = importlib.util.spec_from_file_location("official_opsd_collator", collator_path)
     collator_module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(collator_module)
     official = collator_module.SelfDistillationDataCollator(tokenizer, reason_first=False)([row])
     student = prompt(tokenizer, row)
-    teacher = prompt(tokenizer, row, privileged=True)
+    teacher = prompt(tokenizer, row, privileged=True, context=context)
     student_text = tokenizer.decode(student[0])
     teacher_text = tokenizer.decode(teacher[0])
-    if "Reference Solution Begin" in student_text or row["solution"] not in teacher_text:
+    if "Reference Solution Begin" in student_text or teacher_context(row, context) not in teacher_text:
         raise RuntimeError("Reference context is missing from teacher or present in student")
     log({"event": "prompt_audit", "student": student_text, "teacher": teacher_text,
          "official_collator_fields": sorted(official)}, output)
@@ -140,15 +152,29 @@ def train(args, model, tokenizer, rows, device):
     random.Random(args.seed).shuffle(rows)
     steps = (len(rows) + args.accumulation - 1) // args.accumulation
     scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lambda step: max(0, 1 - step / steps))
+    fixed_rollouts = []
+    if args.fixed_rollout:
+        started = time.perf_counter()
+        for index in range(0, len(rows), args.accumulation):
+            group = rows[index:index + args.accumulation]
+            samples = batch_suffixes(model, tokenizer, [prompt(tokenizer, row) for row in group],
+                                     args.cap, True, device)
+            fixed_rollouts.extend({"id": row["id"], "tokens": ids, "hit_cap": hit}
+                                  for row, (ids, hit) in zip(group, samples, strict=True))
+        cache = args.output / "fixed_rollouts.jsonl"
+        write_rows(cache, fixed_rollouts)
+        fixed_rollouts = read_rows(cache)
+        log({"event": "fixed_rollouts", "seconds": time.perf_counter() - started,
+             "sha256": hashlib.sha256(cache.read_bytes()).hexdigest(), "count": len(fixed_rollouts)}, args.output)
     fixed_reference = None
     sampled_group = []
     for index, row in enumerate(rows):
         started = time.perf_counter()
         ids = prompt(tokenizer, row).to(device)
         if args.mode == "opsd":
-            teacher_ids = prompt(tokenizer, row, privileged=True).to(device)
+            teacher_ids = prompt(tokenizer, row, privileged=True, context=args.teacher_context).to(device)
             group_index = index % args.accumulation
-            if group_index == 0:
+            if not fixed_rollouts and group_index == 0:
                 group_prompts = [prompt(tokenizer, item) for item in rows[index:index + args.accumulation]]
                 sampled_group = batch_suffixes(model, tokenizer, group_prompts, args.cap, True, device)
                 log({
@@ -157,7 +183,14 @@ def train(args, model, tokenizer, rows, device):
                     "seconds": time.perf_counter() - started,
                 }, args.output)
             # All trajectories in this accumulation group use the policy before its next optimizer update.
-            suffix = torch.tensor([sampled_group[group_index][0]], device=device)
+            if fixed_rollouts:
+                cached = fixed_rollouts[index]
+                if cached["id"] != row["id"]:
+                    raise ValueError("Fixed rollout ID mismatch")
+                suffix_ids = cached["tokens"]
+            else:
+                suffix_ids = sampled_group[group_index][0]
+            suffix = torch.tensor([suffix_ids], device=device)
             synchronize(device)
             generated_at = time.perf_counter()
             teacher = fixed_teacher_logits(model, teacher_ids, suffix)
@@ -207,6 +240,7 @@ def train(args, model, tokenizer, rows, device):
         done = time.perf_counter()
         log({
             "event": "microstep", "id": row["id"], "loss": loss.item(), "tokens": suffix.shape[1],
+            "teacher_prompt_tokens": teacher_ids.shape[1] if args.mode == "opsd" else None,
             "rollout_seconds": generated_at - started, "teacher_seconds": teacher_at - generated_at,
             "student_update_seconds": done - teacher_at, "seconds": done - started, **memory(device),
         }, args.output)
@@ -226,10 +260,13 @@ def predict(args, model, tokenizer, rows, device):
         token_counts = []
         for row, (suffix, hit_cap) in zip(batch, suffixes, strict=True):
             token_counts.append(len(suffix))
-            predictions.append({
+            prediction = {
                 "id": row["id"], "response": tokenizer.decode(suffix, skip_special_tokens=True),
                 "generated_tokens": len(suffix), "hit_cap": hit_cap,
-            })
+            }
+            if args.save_token_ids:
+                prediction["token_ids"] = suffix
+            predictions.append(prediction)
         log({"event": "prediction_batch", "count": len(batch), "tokens": sum(token_counts),
              "seconds": time.perf_counter() - start, **memory(device)}, args.output)
     write_rows(args.output / f"{args.prediction_name}.jsonl", predictions)
@@ -250,6 +287,9 @@ def main():
     parser.add_argument("--cap", type=int, default=256)
     parser.add_argument("--sft-reference-cap", type=int, default=320)
     parser.add_argument("--probe", action="store_true")
+    parser.add_argument("--teacher-context", choices=["full", "equations", "answer"], default="full")
+    parser.add_argument("--fixed-rollout", action="store_true")
+    parser.add_argument("--save-token-ids", action="store_true")
     parser.add_argument("--adapter", type=Path)
     parser.add_argument("--prediction-name", default="base", choices=["base", "sft", "opsd"])
     args = parser.parse_args()
@@ -272,7 +312,7 @@ def main():
     start = time.perf_counter()
     tokenizer = AutoTokenizer.from_pretrained(args.model, local_files_only=True)
     if args.probe and checker:
-        check_prompts(tokenizer, rows[0], args.output)
+        check_prompts(tokenizer, rows[0], args.output, args.teacher_context)
     model = AutoModelForCausalLM.from_pretrained(
         args.model, dtype=torch.bfloat16 if device.type == "cuda" else torch.float32,
         device_map={"": str(device)}, attn_implementation="sdpa", local_files_only=True,

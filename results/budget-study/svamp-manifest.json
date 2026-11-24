@@ -1,0 +1,20 @@
+{
+  "source": "https://raw.githubusercontent.com/arkilpatel/SVAMP/78e727689e1c1bebfc4be39c446898e8e10b0518/SVAMP.json",
+  "revision": "78e727689e1c1bebfc4be39c446898e8e10b0518",
+  "source_sha256": "5be77703a6d891ae476d7c082787ad361392aa02453b132516cdd5f4e7934e3e",
+  "source_count": 1000,
+  "selection": "first sorted SHA-256 IDs after normalized GSM8K-train exclusion and deduplication",
+  "gsm8k_train_sha256": "56a0e4de1e77152e08a6141c930effe60b4f83c00b25351c9d28234345ae6d58",
+  "removed_overlap": 0,
+  "sample_size": 256,
+  "inference_budget": 128,
+  "primary_comparison": "answer-only OPSD versus equation-chain SFT under numeric scoring",
+  "seeds": [
+    17,
+    29
+  ],
+  "sha256": {
+    "inputs.jsonl": "45a7546f3b8a015955eaa710e3c7afc5709cf42b348f33519bf0388d97fa1523",
+    "labels.jsonl": "2660880b26eb1bf85cfffeeb5d05cfb6cd5e8b690355381761f4e787ff2c5222"
+  }
+}

@@ -1,0 +1,15 @@
+left,right,seed,both,only_left,only_right,neither
+online,sft,17,2,91,-5,0
+online,sft,29,3,83,-9,0
+answer,equation,17,0,78,-4,0
+answer,equation,29,-2,52,-5,0
+online,fixed,17,0,31,-3,0
+online,fixed,29,-2,23,-3,0
+online,shortsft,17,183,2,-14,0
+online,shortsft,29,166,0,-17,0
+answer,shortsft,17,216,2,-10,0
+answer,shortsft,29,211,1,-11,0
+online,equationsft,17,59,18,-46,0
+online,equationsft,29,57,14,-60,0
+answer,equationsft,17,73,25,-30,0
+answer,equationsft,29,73,20,-30,0

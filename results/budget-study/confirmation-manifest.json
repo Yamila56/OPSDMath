@@ -1,0 +1,46 @@
+{
+  "n": 512,
+  "rule": "first 512 sorted IDs outside source train and old test",
+  "train_equation_counts": [
+    [
+      0,
+      2
+    ],
+    [
+      1,
+      13
+    ],
+    [
+      2,
+      63
+    ],
+    [
+      3,
+      78
+    ],
+    [
+      4,
+      46
+    ],
+    [
+      5,
+      31
+    ],
+    [
+      6,
+      16
+    ],
+    [
+      7,
+      6
+    ],
+    [
+      8,
+      1
+    ]
+  ],
+  "sha256": {
+    "inputs.jsonl": "966f2b4dbed614cc07734fe19f5864ebc93f908ae407d1533632a3627ba6a483",
+    "labels.jsonl": "5c9bc8bf4ea2ba1ed5e4c02fd27ddfb8fc7f90f0b018c76057cec2237c5fae70"
+  }
+}
