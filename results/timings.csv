@@ -1,0 +1,8 @@
+﻿phase,items,updates,completion_tokens,seconds,peak_allocated_mib,peak_reserved_mib
+probe,4,1,698,16.55,4698.8,5196.0
+probe-reload,4,0,608,11.48,3876.2,4158.0
+train-opsd,256,64,33813,714.53,5339.1,5780.0
+train-sft,256,64,33358,72.83,5007.3,6150.0
+eval-base,256,0,38697,124.44,4085.8,4418.0
+eval-sft,256,0,43194,202.79,4351.8,4858.0
+eval-opsd,256,0,34451,193.06,4351.8,4830.0

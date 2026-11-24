@@ -1,0 +1,31 @@
+{
+  "source_revision": "3101c7d5072418e28b9008a6636bde82a006892c",
+  "source_sha256": {
+    "train": "17f347dc51477c50d4efb83959dbb7c56297aba886e5544ee2aaed3024813465",
+    "test": "3730d312f6e3440559ace48831e51066acaca737f6eabec99bccb9e4b3c39d14"
+  },
+  "source_counts": {
+    "train": 7473,
+    "test": 1319
+  },
+  "within_split_duplicates": {
+    "train": 0,
+    "test": 0
+  },
+  "train_test_overlap_removed": 0,
+  "quick_counts": {
+    "train": 64,
+    "test": 96
+  },
+  "counts": {
+    "dev": 128,
+    "train": 256,
+    "test": 256
+  },
+  "file_sha256": {
+    "dev.jsonl": "accde4ab5ee1c26b7e6474778c25175d7f9e7a2db76f12cdaadb049d07c2fd76",
+    "test_inputs.jsonl": "bf63c0ecccc6701cb66d013531947f67e653d125b615f3e8e61f542ce1150ae1",
+    "test_labels.jsonl": "81627e51e2e4ab09bffa9fad84c17577e80da5705dccaad32fe0fc9f7fe0206f",
+    "train.jsonl": "56a0e4de1e77152e08a6141c930effe60b4f83c00b25351c9d28234345ae6d58"
+  }
+}

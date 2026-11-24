@@ -1,0 +1,4 @@
+﻿method,n,primary_correct,audit_correct,audit_accuracy,audit_valid
+base,256,144,144,0.5625,181
+sft,256,154,166,0.6484375,208
+opsd,256,175,176,0.6875,236

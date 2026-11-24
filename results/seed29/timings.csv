@@ -1,0 +1,5 @@
+﻿phase,items,updates,completion_tokens,seconds,peak_allocated_mib,peak_reserved_mib
+train-opsd,256,64,36547,764.04,5338.4,6018.0
+train-sft,256,64,33358,73.0,5021.5,7170.0
+eval-sft,256,0,43117,205.15,4351.8,4858.0
+eval-opsd,256,0,36951,194.64,4351.8,4858.0

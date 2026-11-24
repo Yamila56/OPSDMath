@@ -1,0 +1,5 @@
+﻿parse_group,n,opsd_correct,sft_correct
+both,181,144,149
+opsd_only,41,25,0
+sft_only,16,0,10
+neither,18,0,0
