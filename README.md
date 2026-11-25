@@ -93,7 +93,13 @@ With total generation capped at 128 tokens, varying the answer reserve changes h
 
 On four cached student trajectories, the native clipped objective and the pinned upstream objective agree to within **9.32×10⁻¹⁰**, with identical LoRA gradients. A separate test runs the upstream Trainer with Transformers generation and resumes after the first update. In deterministic mode, the resumed and uninterrupted runs produce identical rollouts and adapter tensors at both steps.
 
-[Answer allocation and Trainer results](results/condition-study/engineering-controls.json) · [Replication details](条件干预实验报告.md)
+[Answer allocation and Trainer results](results/condition-study/engineering-controls.json) · [Fixed-update and recovery checks](TRAINER_PARITY.md) · [Replication details](条件干预实验报告.md)
+
+### External transfer to MATH-500
+
+Under a shared boxed-answer prompt, answer-only OPSD scores **34/500 and 28/500** at 128 generated tokens, compared with **18/500** for frozen Qwen3-1.7B, **28/500 and 22/500** for full-solution OPSD, and **7/500** for each full-solution SFT seed. At 512 tokens, answer-only OPSD scores **263/500 and 262/500** against **253/500** for the frozen model. Both 512-token paired intervals against frozen include zero. The adapters were trained on GSM8K.
+
+[MATH-500 results and provenance](results/condition-study/engineering-followup.json)
 
 ## References
 

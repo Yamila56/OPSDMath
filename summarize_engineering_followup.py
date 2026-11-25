@@ -59,7 +59,9 @@ def reserve_summary(root):
 
 
 def math500_summary(root):
-    names = ("base", "answer17", "answer29", "constraint_brief17", "constraint_brief29", "fullsft17", "fullsft29")
+    names = ["base", "answer17", "answer29", "constraint_brief17", "constraint_brief29", "fullsft17", "fullsft29"]
+    if (root/"FULL-OPSD-DONE").exists():
+        names.extend(("fullopsd17", "fullopsd29"))
     runs = {name: read(root/name/"complete.json") for name in names}
     dataset_ids = {r["dataset_sha256"] for r in runs.values()}
     if len(dataset_ids) != 1:
@@ -72,15 +74,19 @@ def math500_summary(root):
         base = outcomes["base"]
         deltas = {name: paired_math500(rows, base) for name, rows in outcomes.items()}
         matched = {}
+        comparisons = [("answer", "fullsft"), ("constraint_brief", "answer"), ("constraint_brief", "fullsft")]
+        if "fullopsd17" in names:
+            comparisons += [("fullopsd", "fullsft"), ("answer", "fullopsd"), ("constraint_brief", "fullopsd")]
         for seed in (17, 29):
-            for trial, control in (("answer", "fullsft"), ("constraint_brief", "answer"),
-                                   ("constraint_brief", "fullsft")):
+            for trial, control in comparisons:
                 left, right = f"{trial}{seed}", f"{control}{seed}"
                 matched[f"{left}:{right}"] = paired_math500(outcomes[left], outcomes[right])
         result[str(budget)] = dict(metrics={name: runs[name]["metrics"][str(budget)] for name in names},
                                    explicit_final_audit={name: delivery[name][str(budget)] for name in names},
                                    versus_base=deltas, same_seed_comparisons=matched)
-    return dict(dataset_sha256=dataset_ids.pop(), budgets=result)
+    return dict(dataset_sha256=dataset_ids.pop(), budgets=result,
+                provenance={name: runs[name]["provenance"] if "provenance" in runs[name] else
+                            read(root/name/"provenance.json") for name in names})
 
 
 def main():
@@ -92,6 +98,9 @@ def main():
     args = parser.parse_args()
     output = dict(answer_reserve=reserve_summary(args.run/"answer-reserve"),
                   upstream_objective=read(args.run/"upstream-objective-parity.json"))
+    fixed_update = args.run/"trainer-update-parity-v2.json"
+    if fixed_update.exists():
+        output["fixed_trainer_update"] = read(fixed_update)
     trainer = {}
     for variant in ("verified", "deterministic"):
         smoke = args.run/f"upstream-trainer-{variant}"
@@ -100,6 +109,22 @@ def main():
                                     uninterrupted=read(smoke/"uninterrupted.json"))
     if trainer:
         output["upstream_trainer_smoke"] = trainer
+    accumulated = args.run/"upstream-trainer-accumulated"
+    if (accumulated/"DONE").exists():
+        output["upstream_trainer_accumulated"] = dict(
+            resumed=[read(accumulated/f"step-{step}.json") for step in (4, 8)],
+            uninterrupted=read(accumulated/"uninterrupted.json"),
+        )
+    guidance = args.run/"shared-trajectory-audit"
+    if (guidance/"DONE").exists():
+        output["shared_trajectory_audit"] = read(guidance/"comparison"/"summary.json")
+    output["inference_budget_hint"] = {}
+    for name in ("inference-budget-hint-128", "prompt-budget-confirmation"):
+        archive = args.run/name
+        if (archive/"DONE").exists():
+            report = read(archive/"metrics.json")
+            output["inference_budget_hint"][name] = {key: report[key] for key in
+                                                     ("labels_sha256", "metrics", "comparisons")}
     if not args.controls_only:
         output["math500"] = math500_summary(args.run/"math500")
     args.output.parent.mkdir(parents=True, exist_ok=True)

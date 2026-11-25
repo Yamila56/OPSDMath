@@ -33,7 +33,7 @@ def teacher_context(row, mode):
     return "\n".join([*EQUATIONS.findall(row["solution"]), final])
 
 
-def prompt(tokenizer, row, privileged=False, context="full"):
+def prompt(tokenizer, row, privileged=False, context="full", output_budget=None):
     problem = row["problem"] if "problem" in row else row["question"]
     message = f"Problem: {problem}\n\n"
     if privileged and context in BRIEF_CONTEXTS:
@@ -44,6 +44,8 @@ def prompt(tokenizer, row, privileged=False, context="full"):
             f"=== Reference Solution Begin ===\n{teacher_context(row, context)}\n=== Reference Solution End ===\n\n"
             "After reading the reference, derive the answer in your own words.\n"
         )
+    if output_budget is not None:
+        message += f"The complete response must fit within {output_budget} tokens. Prioritize the key steps.\n"
     return tokenizer.apply_chat_template(
         [{"role": "user", "content": message + INSTRUCTION}],
         tokenize=True, add_generation_prompt=True, enable_thinking=False, return_tensors="pt",
@@ -90,12 +92,18 @@ def fixed_teacher_logits(model, ids, suffix):
         return completion_logits(model, ids, suffix)
 
 
-def distillation_loss(student_logits, teacher_logits):
+def distillation_loss(student_logits, teacher_logits, diagnostics=None):
     student = F.log_softmax(student_logits.float() / ROLLOUT_TEMPERATURE, dim=-1)
     teacher = F.log_softmax(teacher_logits.float() / ROLLOUT_TEMPERATURE, dim=-1)
     # The upstream clip applies to each vocabulary contribution before summation.
-    contributions = F.kl_div(student, teacher, reduction="none", log_target=True).clamp(max=0.05)
-    return contributions.sum(dim=-1).mean()
+    contributions = F.kl_div(student, teacher, reduction="none", log_target=True)
+    if diagnostics is not None:
+        with torch.no_grad():
+            clipped = contributions > 0.05
+            diagnostics.update(unclipped_kl=float(contributions.sum(-1).mean()),
+                               clipped_vocabulary_fraction=float(clipped.float().mean()),
+                               clipped_position_fraction=float(clipped.any(dim=-1).float().mean()))
+    return contributions.clamp(max=0.05).sum(dim=-1).mean()
 
 
 def check_loss():
@@ -217,8 +225,9 @@ def train(args, model, tokenizer, rows, device):
             generated_at = teacher_at = time.perf_counter()
         model.train()
         logits = completion_logits(model, ids, suffix)
+        diagnostic = {}
         if args.mode == "opsd":
-            loss = distillation_loss(logits, teacher)
+            loss = distillation_loss(logits, teacher, diagnostics=diagnostic if args.probe else None)
             del teacher
         else:
             loss = F.cross_entropy(logits.flatten(0, 1).float(), suffix.flatten())
@@ -248,7 +257,7 @@ def train(args, model, tokenizer, rows, device):
             "event": "microstep", "id": row["id"], "loss": loss.item(), "tokens": suffix.shape[1],
             "teacher_prompt_tokens": teacher_ids.shape[1] if args.mode == "opsd" else None,
             "rollout_seconds": generated_at - started, "teacher_seconds": teacher_at - generated_at,
-            "student_update_seconds": done - teacher_at, "seconds": done - started, **memory(device),
+            "student_update_seconds": done - teacher_at, "seconds": done - started, **memory(device), **diagnostic,
         }, args.output)
     model.save_pretrained(args.output / "adapter")
 

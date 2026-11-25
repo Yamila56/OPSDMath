@@ -174,6 +174,9 @@ def score(args):
         base_correct = sum(r["base"] for r in paired.values())
         metrics[method] = dict(n=len(correct), correct=sum(correct), valid=sum(valid), pairs=len(paired),
                                mean_output_tokens=mean(r["generated_tokens"] for r in predictions),
+                               mean_model_generated_tokens=mean(len(r["draft_token_ids"]) +
+                                                                len(r["final_token_ids"]) for r in predictions),
+                               mean_inserted_marker_tokens=mean(len(r["marker_token_ids"]) for r in predictions),
                                draft_cap_hits=sum(capped.values()),
                                incorrect_at_draft_cap=sum(r["draft_hit_cap"] and not r["correct"] for r in rows),
                                base=sum(r["base"] for r in paired.values()),

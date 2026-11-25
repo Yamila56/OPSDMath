@@ -68,10 +68,11 @@ class NumericField(LogitsProcessor):
 
 
 @torch.inference_mode()
-def generate(model, tokenizer, batch, *, budget=BUDGET, draft_cap=DRAFT_CAP, teacher_context=None):
+def generate(model, tokenizer, batch, *, budget=BUDGET, draft_cap=DRAFT_CAP, teacher_context=None,
+             budget_hint=False):
     device = model.device
     prompts = [prompt(tokenizer, row, privileged=teacher_context is not None,
-                      context=teacher_context or "full") for row in batch]
+                      context=teacher_context or "full", output_budget=budget if budget_hint else None) for row in batch]
     drafts = batch_suffixes(model, tokenizer, prompts, draft_cap, False, device)
     eos_config = model.generation_config.eos_token_id
     eos = {eos_config} if isinstance(eos_config, int) else set(eos_config)
@@ -120,6 +121,8 @@ def main():
     parser.add_argument("--budget", type=int, choices=[128, 256, 512], default=BUDGET)
     parser.add_argument("--answer-reserve", type=int, default=BUDGET-DRAFT_CAP,
                         help="Reserve for the answer marker, numeric answer, and EOS.")
+    parser.add_argument("--budget-hint", action="store_true",
+                        help="Tell the model the total output budget before generation.")
     parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--limit", type=int)
     args = parser.parse_args()
@@ -146,7 +149,8 @@ def main():
     predictions = []
     for index in range(0, len(rows), args.batch_size):
         predictions.extend(generate(model, tokenizer, rows[index:index + args.batch_size],
-                                    budget=args.budget, draft_cap=draft_cap, teacher_context=args.teacher_context))
+                                    budget=args.budget, draft_cap=draft_cap, teacher_context=args.teacher_context,
+                                    budget_hint=args.budget_hint))
         print(json.dumps(dict(event="batch", processed=len(predictions), total=len(rows))), flush=True)
     write_rows(args.output / "predictions.jsonl", predictions)
     (args.output / "complete.json").write_text(json.dumps(dict(

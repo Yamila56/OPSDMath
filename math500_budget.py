@@ -1,6 +1,7 @@
 """Evaluate GSM8K-trained checkpoints on MATH-500 with a shared boxed-answer prompt."""
 import argparse
 import hashlib
+from importlib.metadata import version
 import json
 import time
 from collections import Counter
@@ -15,6 +16,29 @@ from gsm8k import read_rows, write_rows
 from run_math import batch_suffixes
 
 INSTRUCTION = r"Solve the problem briefly. Put your final answer in \boxed{...}."
+
+
+def provenance(model, adapter, batch_size, *, model_revision=None, retrospective=False):
+    def hashes(directory, names):
+        entries = {}
+        for name in names:
+            path = directory/name
+            if path.is_file():
+                with path.open("rb") as stream:
+                    entries[name] = hashlib.file_digest(stream, "sha256").hexdigest()
+        return entries
+
+    return dict(
+        model_revision=model_revision,
+        model_files=hashes(model, ("config.json", "generation_config.json", "model.safetensors.index.json")),
+        tokenizer_files=hashes(model, ("tokenizer.json", "tokenizer_config.json", "chat_template.jinja")),
+        adapter_files=hashes(adapter, ("adapter_config.json", "adapter_model.safetensors")) if adapter else None,
+        prompt_sha256=hashlib.sha256(INSTRUCTION.encode()).hexdigest(),
+        decoding=dict(cap=512, batch_size=batch_size, dtype="bfloat16", attention="sdpa",
+                      do_sample=False, enable_thinking=False),
+        software={p: version(p) for p in ("transformers", "torch", "peft", "math-verify")},
+        retrospective=retrospective,
+    )
 
 
 def last_box(text):
@@ -64,6 +88,7 @@ def main():
     for arg in ("data", "model", "output"):
         parser.add_argument(f"--{arg}", type=Path, required=True)
     parser.add_argument("--adapter", type=Path)
+    parser.add_argument("--model-revision")
     parser.add_argument("--batch-size", type=int, default=24)
     args = parser.parse_args()
     data = read_rows(args.data)
@@ -106,6 +131,7 @@ def main():
     (args.output/"complete.json").write_text(json.dumps(dict(
         dataset_sha256=hashlib.sha256(args.data.read_bytes()).hexdigest(),
         prefix_probe=args.batch_size, generation_seconds=generation_seconds, metrics=results,
+        provenance=provenance(args.model, args.adapter, args.batch_size, model_revision=args.model_revision),
     ), indent=2) + "\n", encoding="utf-8")
 
 

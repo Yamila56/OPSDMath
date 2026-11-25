@@ -1,4 +1,4 @@
-"""Run and resume a two-step single-device smoke test of pinned upstream OPSD."""
+"""Run and resume a single-device smoke test of pinned upstream OPSD."""
 import argparse
 import hashlib
 import json
@@ -15,9 +15,12 @@ from trl.experimental.gold.gold_config import GOLDConfig
 from gsm8k import read_rows
 
 
-class StopAfterFirstUpdate(TrainerCallback):
+class StopAtUpdate(TrainerCallback):
+    def __init__(self, step):
+        self.step = step
+
     def on_step_end(self, args, state, control, **kwargs):
-        if state.global_step == 1:
+        if state.global_step == self.step:
             control.should_training_stop = True
             control.should_save = True
         return control
@@ -39,9 +42,18 @@ def main():
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--resume", action="store_true")
     mode.add_argument("--uninterrupted", type=Path, metavar="RESUMED_RUN",
-                      help="Run two steps without a restart and compare its final adapter to a resumed run.")
+                      help="Run without a restart and compare its final adapter to a resumed run.")
     parser.add_argument("--deterministic", action="store_true")
+    parser.add_argument("--steps", type=int, default=2)
+    parser.add_argument("--accumulation", type=int, default=1)
+    parser.add_argument("--rollout-cap", type=int, default=48)
     args = parser.parse_args()
+    if args.steps < 2 or args.steps % 2 or not 1 <= args.accumulation or not 1 <= args.rollout_cap < 384:
+        parser.error("Use an even number of updates, positive accumulation, and rollout cap from 1 to 383")
+    midpoint = args.steps//2
+    examples = read_rows(args.data)[:max(4, args.steps*args.accumulation)]
+    if len(examples) < args.steps*args.accumulation:
+        parser.error("Provide at least one distinct row per microstep")
     sys.path.insert(0, str(args.upstream.resolve()))
     from opsd_trainer import OPSDTrainer
 
@@ -65,24 +77,25 @@ def main():
     )
     cfg = GOLDConfig(
         output_dir=str(args.output), beta=0, lmbda=1, per_device_train_batch_size=1,
-        gradient_accumulation_steps=1, max_steps=2, max_length=512, max_completion_length=48,
+        gradient_accumulation_steps=args.accumulation, max_steps=args.steps, max_length=512,
+        max_completion_length=args.rollout_cap,
         use_vllm=False, learning_rate=5e-6, bf16=True, temperature=1.1, top_p=.95, top_k=20,
-        max_grad_norm=.1, logging_steps=1, save_steps=1, report_to="none",
+        max_grad_norm=.1, logging_steps=1, save_steps=midpoint, report_to="none",
         remove_unused_columns=False, dataset_kwargs={"skip_prepare_dataset": True}, seed=17,
         full_determinism=args.deterministic,
     )
     peft = LoraConfig(r=64, lora_alpha=128, task_type="CAUSAL_LM", target_modules=[
         "q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj",
     ])
-    stop_after_first = not (args.resume or args.uninterrupted)
+    interrupted = not (args.resume or args.uninterrupted)
     traces = []
     trainer = RolloutAuditTrainer(model=model, args=cfg, processing_class=tokenizer, peft_config=peft,
-                                 train_dataset=Dataset.from_list(read_rows(args.data)[:4]),
+                                 train_dataset=Dataset.from_list(examples),
                                  fixed_teacher=True, jsd_token_clip=.05,
-                                 callbacks=[StopAfterFirstUpdate()] if stop_after_first else [])
-    start = str(args.output/"checkpoint-1") if args.resume else None
+                                 callbacks=[StopAtUpdate(midpoint)] if interrupted else [])
+    start = str(args.output/f"checkpoint-{midpoint}") if args.resume else None
     trainer.train(resume_from_checkpoint=start)
-    expected = 1 if stop_after_first else 2
+    expected = midpoint if interrupted else args.steps
     if trainer.state.global_step != expected:
         raise RuntimeError(f"Expected optimizer step {expected}, got {trainer.state.global_step}")
     checkpoint = args.output/f"checkpoint-{expected}"
@@ -93,15 +106,17 @@ def main():
     if not any("loss" in event and event["step"] == expected for event in log):
         raise RuntimeError("Expected a logged distillation loss after the update")
     result = dict(global_step=expected, resumed=args.resume, deterministic=args.deterministic,
+                  gradient_accumulation_steps=args.accumulation, total_training_rows=len(examples),
+                  max_completion_length=args.rollout_cap,
                   peak_mib=torch.cuda.max_memory_allocated()/2**20, rollouts=traces, log=log)
-    if expected == 2:
-        result["optimizer_update"] = compare_adapters(args.output/"checkpoint-1", checkpoint)
+    if expected == args.steps:
+        result["optimizer_update"] = compare_adapters(args.output/f"checkpoint-{midpoint}", checkpoint)
         if not result["optimizer_update"]["changed"]:
             raise RuntimeError("The second optimizer step did not change any adapter weights")
     if args.uninterrupted:
-        result["first_update_versus_resumed"] = compare_adapters(args.uninterrupted/"checkpoint-1",
-                                                                args.output/"checkpoint-1")
-        result["versus_resumed"] = compare_adapters(args.uninterrupted/"checkpoint-2", checkpoint)
+        result["midpoint_versus_resumed"] = compare_adapters(args.uninterrupted/f"checkpoint-{midpoint}",
+                                                            args.output/f"checkpoint-{midpoint}")
+        result["versus_resumed"] = compare_adapters(args.uninterrupted/f"checkpoint-{args.steps}", checkpoint)
     (args.output/f"step-{expected}.json").write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
 
 
