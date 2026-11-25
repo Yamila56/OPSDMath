@@ -1,8 +1,8 @@
 # OPSDMath
 
-A reproducible study of short-budget math answers with Qwen3-1.7B. It compares on-policy self-distillation (OPSD) and supervised fine-tuning (SFT) at the same generation cap, and measures when each model gives a correct number in a usable format.
+A reproducible study of short-budget math answers with Qwen3-1.7B and Qwen3-8B. It compares on-policy self-distillation (OPSD) and supervised fine-tuning (SFT) at the same generation cap, and measures when each model gives a correct number in a usable format.
 
-## Results
+## Qwen3-1.7B results
 
 At **128 generated tokens**, an OPSD teacher that sees only the final training answer outperforms SFT on compact equation chains under numeric extraction. Numbers are correct answers per evaluation split.
 
@@ -100,6 +100,19 @@ On four cached student trajectories, the native clipped objective and the pinned
 Under a shared boxed-answer prompt, answer-only OPSD scores **34/500 and 28/500** at 128 generated tokens, compared with **18/500** for frozen Qwen3-1.7B, **28/500 and 22/500** for full-solution OPSD, and **7/500** for each full-solution SFT seed. At 512 tokens, answer-only OPSD scores **263/500 and 262/500** against **253/500** for the frozen model. Both 512-token paired intervals against frozen include zero. The adapters were trained on GSM8K.
 
 [MATH-500 results and provenance](results/condition-study/engineering-followup.json)
+
+## Qwen3-8B scale comparison
+
+The 8B experiment uses the same 256 GSM8K training questions and 64 updates per group. The table shows numeric accuracy on the same 512 confirmation questions at a 128-token cap. The budget prompt names the token limit and asks the model to prioritize key steps.
+
+| Prompt | Frozen 8B | Answer-only OPSD, seeds 17 / 29 | Equation-chain SFT, seeds 17 / 29 |
+| --- | ---: | ---: | ---: |
+| Standard | 319/512 | 361/512 · 287/512 | 323/512 · 309/512 |
+| Explicit budget | 369/512 | 386/512 · 339/512 | 402/512 · 409/512 |
+
+The standard-prompt OPSD advantage observed at 1.7B appears in one of the two 8B seeds. Adding the budget instruction reduces the OPSD-minus-SFT gap by **10.55 and 9.38 percentage points**, with both paired intervals above zero. Equation-chain SFT also scores higher under the strict answer-line policy in both prompts and both seeds. The experiment measures the effect of the full budget instruction.
+
+[8B protocol and reproduction](8B规模对照报告.md) · [Complete 8B scorecard](results/scale-transfer/qwen3-8b.json)
 
 ## References
 
