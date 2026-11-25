@@ -87,6 +87,14 @@ At 512 tokens the two constraint-trained students recover to **191/216** and **1
 
 [Condition-change metrics](results/condition-study/metrics.json) · [Experiment and reproduction](条件干预实验报告.md)
 
+### Answer allocation and trainer checks
+
+With total generation capped at 128 tokens, varying the answer reserve changes how much space the model has for its draft. For the weakest constraint checkpoint, the number of valid answer fields rises from **144/288** to **205/288** as the reserve grows from 16 to 48 tokens. Its effective-condition pair accuracy stays at **1/96** throughout. Another constraint checkpoint drops from **33/96** at a reserve of 24 to **16/96** at a reserve of 48.
+
+On four cached student trajectories, the native clipped objective and the pinned upstream objective agree to within **9.32×10⁻¹⁰**, with identical LoRA gradients. A separate test runs the upstream Trainer with Transformers generation and resumes after the first update. In deterministic mode, the resumed and uninterrupted runs produce identical rollouts and adapter tensors at both steps.
+
+[Answer allocation and Trainer results](results/condition-study/engineering-controls.json) · [Replication details](条件干预实验报告.md)
+
 ## References
 
 The training objective follows [Self-Distilled Reasoner](https://proceedings.mlr.press/v306/zhao26be.html). This repo adapts the training loop to one GPU and provides the training targets, evaluation, and comparisons. Data comes from [GSM8K](https://github.com/openai/grade-school-math) and [SVAMP](https://aclanthology.org/2021.naacl-main.168/). The [initial reproduction](实验报告.md) records earlier runs on a separate 256-question evaluation set.

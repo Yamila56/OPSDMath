@@ -148,7 +148,8 @@ def score(args):
         predictions = read_rows(Path(raw_path))
         if len(predictions) != len(keys) or {r["id"] for r in predictions} != keys:
             raise ValueError(f"Unexpected prediction IDs for {method}")
-        values = {r["id"]: audit(r, budget=args.budget, draft_cap=args.budget - 24) for r in predictions}
+        values = {r["id"]: audit(r, budget=args.budget, draft_cap=args.budget - args.answer_reserve)
+                  for r in predictions}
         paired, copied, spurious, correct, valid = {}, {}, {}, [], []
         completed = {}
         capped = {r["id"]: r["draft_hit_cap"] for r in predictions}
@@ -273,6 +274,7 @@ def main():
     report.add_argument("predictions", nargs="+")
     report.add_argument("--compare", nargs="*", default=[])
     report.add_argument("--budget", type=int, default=128)
+    report.add_argument("--answer-reserve", type=int, default=24)
     budgets = commands.add_parser("compare-budgets")
     budgets.add_argument("lower", type=Path)
     budgets.add_argument("higher", type=Path)

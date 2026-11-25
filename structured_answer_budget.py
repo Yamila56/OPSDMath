@@ -118,6 +118,8 @@ def main():
     parser.add_argument("--adapter", type=Path)
     parser.add_argument("--teacher-context", choices=["general_brief", "constraint_brief"])
     parser.add_argument("--budget", type=int, choices=[128, 256, 512], default=BUDGET)
+    parser.add_argument("--answer-reserve", type=int, default=BUDGET-DRAFT_CAP,
+                        help="Reserve for the answer marker, numeric answer, and EOS.")
     parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--limit", type=int)
     args = parser.parse_args()
@@ -126,12 +128,15 @@ def main():
         parser.error("Pass a nonempty question-only split and a positive batch size")
     if args.teacher_context and (args.adapter or any(args.teacher_context not in row for row in rows)):
         parser.error("Teacher probes require the base model and cached briefs on every row")
-    args.output.mkdir(parents=True, exist_ok=False)
-    draft_cap = args.budget - (BUDGET-DRAFT_CAP)
-    config = dict(vars(args), draft_cap=draft_cap, marker=MARKER)
-    (args.output / "config.json").write_text(json.dumps(config, default=str, indent=2) + "\n", encoding="utf-8")
+    draft_cap = args.budget - args.answer_reserve
     start = time.perf_counter()
     tokenizer = AutoTokenizer.from_pretrained(args.model, local_files_only=True)
+    marker_size = len(tokenizer.encode(MARKER, add_special_tokens=False))
+    if not marker_size+1 < args.answer_reserve < args.budget:
+        parser.error("Reserve must fit the marker, a numeric token and EOS, with room for a draft")
+    args.output.mkdir(parents=True, exist_ok=False)
+    config = dict(vars(args), draft_cap=draft_cap, marker=MARKER)
+    (args.output / "config.json").write_text(json.dumps(config, default=str, indent=2) + "\n", encoding="utf-8")
     base = AutoModelForCausalLM.from_pretrained(
         args.model, dtype=torch.bfloat16, device_map={"": "cuda:0"}, attn_implementation="sdpa",
         local_files_only=True,
