@@ -19,9 +19,12 @@ from gsm8k import read_rows, write_rows
 INSTRUCTION = "Solve briefly. End with Final answer: <number>."
 ROLLOUT_TEMPERATURE = 1.1
 EQUATIONS = re.compile(r"<<([^<>]+)>>")
+BRIEF_CONTEXTS = ("general_brief", "constraint_brief")
 
 
 def teacher_context(row, mode):
+    if mode in BRIEF_CONTEXTS:
+        return row[mode]
     if mode == "full":
         return row["solution"]
     final = f"Final answer: {row['answer']}"
@@ -31,8 +34,11 @@ def teacher_context(row, mode):
 
 
 def prompt(tokenizer, row, privileged=False, context="full"):
-    message = f"Problem: {row['problem']}\n\n"
-    if privileged:
+    problem = row["problem"] if "problem" in row else row["question"]
+    message = f"Problem: {problem}\n\n"
+    if privileged and context in BRIEF_CONTEXTS:
+        message += f"Problem notes:\n{teacher_context(row, context)}\n\n"
+    elif privileged:
         message += (
             "Here is a reference solution to this problem:\n"
             f"=== Reference Solution Begin ===\n{teacher_context(row, context)}\n=== Reference Solution End ===\n\n"
@@ -287,7 +293,7 @@ def main():
     parser.add_argument("--cap", type=int, default=256)
     parser.add_argument("--sft-reference-cap", type=int, default=320)
     parser.add_argument("--probe", action="store_true")
-    parser.add_argument("--teacher-context", choices=["full", "equations", "answer"], default="full")
+    parser.add_argument("--teacher-context", choices=["full", "equations", "answer", *BRIEF_CONTEXTS], default="full")
     parser.add_argument("--fixed-rollout", action="store_true")
     parser.add_argument("--save-token-ids", action="store_true")
     parser.add_argument("--adapter", type=Path)
@@ -303,7 +309,9 @@ def main():
         parser.error("Provide --model, --data and --output and use positive generation and adapter sizes.")
     checker = args.mode != "predict"
     rows = read_rows(args.data)[:args.limit]
-    if not rows or (checker and any("solution" not in row for row in rows)):
+    brief_training = args.mode == "opsd" and args.teacher_context in BRIEF_CONTEXTS
+    required = {"id", "problem", args.teacher_context if brief_training else "solution"}
+    if not rows or (checker and any(not required <= row.keys() for row in rows)):
         parser.error("Pass a nonempty dataset with reference solutions for training.")
     args.output.mkdir(parents=True, exist_ok=False)
     (args.output / "config.json").write_text(json.dumps(vars(args), default=str, indent=2), encoding="utf-8")
@@ -311,7 +319,7 @@ def main():
     device = torch.device(args.device)
     start = time.perf_counter()
     tokenizer = AutoTokenizer.from_pretrained(args.model, local_files_only=True)
-    if args.probe and checker:
+    if args.probe and checker and not brief_training:
         check_prompts(tokenizer, rows[0], args.output, args.teacher_context)
     model = AutoModelForCausalLM.from_pretrained(
         args.model, dtype=torch.bfloat16 if device.type == "cuda" else torch.float32,

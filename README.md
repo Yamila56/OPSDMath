@@ -67,6 +67,28 @@ python score_structured_answer.py data/next-confirmation/labels.jsonl runs/struc
 
 [Structured GSM8K metrics](results/budget-study/structured-gsm8k-metrics.csv) · [Structured SVAMP metrics](results/budget-study/structured-svamp-metrics.csv)
 
+## Condition changes and teacher notes
+
+The controlled evaluation contains 216 base problems and 792 question variants. It changes relevant conditions, adds irrelevant information, and tests changes in numerical values and quantifier scope. Results below use the shared 128-token answer protocol. A pair counts as correct when both questions are answered correctly.
+
+| Training method | Effective-condition pairs correct | Irrelevant-condition pairs correct |
+| --- | ---: | ---: |
+| Frozen Qwen3-1.7B | 160/216 | 187/216 |
+| Equation-chain SFT, two seeds | 121/216 · 119/216 | 116/216 · 114/216 |
+| Answer-only teacher OPSD | 168/216 · 167/216 | 187/216 · 187/216 |
+| General teacher notes | 154/216 · 140/216 | 181/216 · 152/216 |
+| Constraint-focused teacher notes | 74/216 · 143/216 | 126/216 · 188/216 |
+
+Answer-only OPSD outperforms equation-chain SFT on this test. Its gain relative to the frozen base is smaller, and the paired intervals include zero for both seeds. The two note policies use the same structured format and matched lengths. A frozen model generates the notes from the questions. Their students show lower effective-condition pair accuracy than the corresponding answer-only models at 128 tokens. One constraint-trained student reaches its draft cap on all 72 quantifier-scope variants.
+
+At 512 tokens the two constraint-trained students recover to **191/216** and **180/216** effective-condition pairs, with mean outputs of **139.5** and **93.4** tokens per question. The frozen model reaches 175/216 at 82.6 tokens. On 288 additional questions, the constraint-trained students also improve as the budget grows, while the relative ranking at 128 tokens varies by seed. The results characterize how teacher context changes answer delivery under a shared budget.
+
+![Effective-condition pair accuracy by generation cap and actual generated tokens](results/condition-study/budget-curves.png)
+
+[Condition-change metrics](results/condition-study/metrics.json) · [Experiment and reproduction](条件干预实验报告.md)
+
 ## References
 
 The training objective follows [Self-Distilled Reasoner](https://proceedings.mlr.press/v306/zhao26be.html). This repo adapts the training loop to one GPU and provides the training targets, evaluation, and comparisons. Data comes from [GSM8K](https://github.com/openai/grade-school-math) and [SVAMP](https://aclanthology.org/2021.naacl-main.168/). The [initial reproduction](实验报告.md) records earlier runs on a separate 256-question evaluation set.
+
+The note comparison adapts the question-only brief generation studied in [B-OPSD](https://arxiv.org/abs/2611.19273). The template interventions follow the experimental approach of [GSM-Symbolic](https://arxiv.org/abs/2410.05229).

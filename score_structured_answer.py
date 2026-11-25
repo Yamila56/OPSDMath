@@ -10,9 +10,9 @@ from budget_study import uncertainty
 from gsm8k import number, read_rows
 
 
-def audit(row):
+def audit(row, budget=128, draft_cap=104):
     charged = sum(len(row[field]) for field in ("draft_token_ids", "marker_token_ids", "final_token_ids"))
-    if charged != row["generated_tokens"] or charged > 128 or len(row["draft_token_ids"]) > 104:
+    if charged != row["generated_tokens"] or charged > budget or len(row["draft_token_ids"]) > draft_cap:
         raise ValueError(f"Token-budget mismatch for {row['id']}")
     marker = "Final answer: "
     line = row["response"]

@@ -68,10 +68,11 @@ class NumericField(LogitsProcessor):
 
 
 @torch.inference_mode()
-def generate(model, tokenizer, batch):
+def generate(model, tokenizer, batch, *, budget=BUDGET, draft_cap=DRAFT_CAP, teacher_context=None):
     device = model.device
-    prompts = [prompt(tokenizer, row) for row in batch]
-    drafts = batch_suffixes(model, tokenizer, prompts, DRAFT_CAP, False, device)
+    prompts = [prompt(tokenizer, row, privileged=teacher_context is not None,
+                      context=teacher_context or "full") for row in batch]
+    drafts = batch_suffixes(model, tokenizer, prompts, draft_cap, False, device)
     eos_config = model.generation_config.eos_token_id
     eos = {eos_config} if isinstance(eos_config, int) else set(eos_config)
     marker = tokenizer.encode(MARKER, add_special_tokens=False)
@@ -83,7 +84,7 @@ def generate(model, tokenizer, batch):
         prefix.append(ids[0].tolist() + context + marker)
     # The common reserve charges the marker and the draft's EOS when present.
     # Drafts that end early leave unused allowance.
-    final_cap = BUDGET - DRAFT_CAP - len(marker)
+    final_cap = budget - draft_cap - len(marker)
     tokenizer.padding_side = "left"
     inputs = tokenizer.pad({"input_ids": prefix}, return_tensors="pt").to(device)
     width = inputs.input_ids.shape[1]
@@ -100,7 +101,7 @@ def generate(model, tokenizer, batch):
         text = tokenizer.decode(tokens, skip_special_tokens=True, clean_up_tokenization_spaces=False)
         parsed = number(text) if end is not None and COMPLETE_NUMBER.fullmatch(text) else None
         charged = len(draft) + len(marker) + len(tokens)
-        if charged > BUDGET:
+        if charged > budget:
             raise RuntimeError("Joint token budget exceeded")
         result.append(dict(id=row["id"], response=MARKER.lstrip("\n") + text,
                            parsed=str(parsed) if parsed is not None else None, final_eos=end is not None,
@@ -112,16 +113,22 @@ def generate(model, tokenizer, batch):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    for option in ("model", "adapter", "data", "output"):
+    for option in ("model", "data", "output"):
         parser.add_argument(f"--{option}", type=Path, required=True)
+    parser.add_argument("--adapter", type=Path)
+    parser.add_argument("--teacher-context", choices=["general_brief", "constraint_brief"])
+    parser.add_argument("--budget", type=int, choices=[128, 256, 512], default=BUDGET)
     parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--limit", type=int)
     args = parser.parse_args()
     rows = read_rows(args.data)[:args.limit]
-    if not rows or args.batch_size < 1 or any("answer" in row for row in rows):
+    if not rows or args.batch_size < 1 or any({"answer", "solution"} & row.keys() for row in rows):
         parser.error("Pass a nonempty question-only split and a positive batch size")
+    if args.teacher_context and (args.adapter or any(args.teacher_context not in row for row in rows)):
+        parser.error("Teacher probes require the base model and cached briefs on every row")
     args.output.mkdir(parents=True, exist_ok=False)
-    config = dict(vars(args), budget=BUDGET, draft_cap=DRAFT_CAP, marker=MARKER)
+    draft_cap = args.budget - (BUDGET-DRAFT_CAP)
+    config = dict(vars(args), draft_cap=draft_cap, marker=MARKER)
     (args.output / "config.json").write_text(json.dumps(config, default=str, indent=2) + "\n", encoding="utf-8")
     start = time.perf_counter()
     tokenizer = AutoTokenizer.from_pretrained(args.model, local_files_only=True)
@@ -130,10 +137,11 @@ def main():
         local_files_only=True,
     )
     base.generation_config.pad_token_id = tokenizer.pad_token_id
-    model = PeftModel.from_pretrained(base, args.adapter).eval()
+    model = (PeftModel.from_pretrained(base, args.adapter) if args.adapter else base).eval()
     predictions = []
     for index in range(0, len(rows), args.batch_size):
-        predictions.extend(generate(model, tokenizer, rows[index:index + args.batch_size]))
+        predictions.extend(generate(model, tokenizer, rows[index:index + args.batch_size],
+                                    budget=args.budget, draft_cap=draft_cap, teacher_context=args.teacher_context))
         print(json.dumps(dict(event="batch", processed=len(predictions), total=len(rows))), flush=True)
     write_rows(args.output / "predictions.jsonl", predictions)
     (args.output / "complete.json").write_text(json.dumps(dict(
