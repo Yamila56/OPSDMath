@@ -1,0 +1,110 @@
+{
+  "1.7B": {
+    "clipped": {
+      "raises": 57,
+      "lowers": 2
+    },
+    "forward": {
+      "raises": 59,
+      "lowers": 0
+    },
+    "reverse": {
+      "raises": 59,
+      "lowers": 0
+    }
+  },
+  "8B": {
+    "clipped": {
+      "raises": 27,
+      "lowers": 32
+    },
+    "forward": {
+      "raises": 59,
+      "lowers": 0
+    },
+    "reverse": {
+      "raises": 59,
+      "lowers": 0
+    }
+  },
+  "8B_minus_1.7B": {
+    "n": 59,
+    "lowering_difference": 0.5084745762711864,
+    "paired_ci95": [
+      0.38940677966101733,
+      0.6440677966101694
+    ]
+  },
+  "1.7B/17": {
+    "clipped": {
+      "raises": 57,
+      "lowers": 2
+    },
+    "forward": {
+      "raises": 59,
+      "lowers": 0
+    },
+    "reverse": {
+      "raises": 59,
+      "lowers": 0
+    }
+  },
+  "1.7B/29": {
+    "clipped": {
+      "raises": 58,
+      "lowers": 1
+    },
+    "forward": {
+      "raises": 59,
+      "lowers": 0
+    },
+    "reverse": {
+      "raises": 59,
+      "lowers": 0
+    }
+  },
+  "8B/17": {
+    "clipped": {
+      "raises": 33,
+      "lowers": 26
+    },
+    "forward": {
+      "raises": 59,
+      "lowers": 0
+    },
+    "reverse": {
+      "raises": 59,
+      "lowers": 0
+    }
+  },
+  "8B/29": {
+    "clipped": {
+      "raises": 37,
+      "lowers": 22
+    },
+    "forward": {
+      "raises": 59,
+      "lowers": 0
+    },
+    "reverse": {
+      "raises": 59,
+      "lowers": 0
+    }
+  },
+  "8B_minus_1.7B/17": {
+    "n": 59,
+    "lowering_difference": 0.4067796610169492,
+    "paired_ci95": [
+      0.288135593220339,
+      0.5254237288135594
+    ]
+  },
+  "8B_minus_1.7B/29": {
+    "n": 59,
+    "lowering_difference": 0.3559322033898305,
+    "paired_ci95": [
+      0.23728813559322035,
+      0.4745762711864407
+    ]
+  }
+}

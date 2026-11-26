@@ -1,0 +1,17 @@
+{
+  "early": {
+    "total": 178,
+    "annotated_equations": 177,
+    "passes_arithmetic_and_last_answer": 174
+  },
+  "late": {
+    "total": 60,
+    "annotated_equations": 59,
+    "passes_arithmetic_and_last_answer": 53
+  },
+  "wrong_both": {
+    "total": 18,
+    "annotated_equations": 18,
+    "passes_arithmetic_and_last_answer": 16
+  }
+}

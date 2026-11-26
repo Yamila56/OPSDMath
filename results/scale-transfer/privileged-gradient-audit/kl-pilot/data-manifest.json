@@ -1,0 +1,14 @@
+{
+  "n": 192,
+  "revision": "3101c7d5072418e28b9008a6636bde82a006892c",
+  "seed": 29,
+  "training_n": 256,
+  "short": 128,
+  "long": 512,
+  "analysis": "clipped 0.05 vs full forward KL; early retention and late acceleration at fixed combined-128 prompt",
+  "scope": "one-seed controlled pilot; fresh project holdout from GSM8K train; no parameter selection",
+  "sha256": {
+    "inputs.jsonl": "a069bd78fc6216638003e2e4a5d771ca17e9ab115ed9e9df762dd193323efb58",
+    "labels.jsonl": "0882cbcceafaf819798885168a93c24b69b3f7898e6b52ddf5f71574d088fb55"
+  }
+}

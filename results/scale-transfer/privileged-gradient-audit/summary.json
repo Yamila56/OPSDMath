@@ -1,0 +1,198 @@
+{
+  "training_reference_coverage": {
+    "1.7B": {
+      "total": 256,
+      "arithmetic_checked": 243,
+      "within_128": 243,
+      "max_tokens": 108
+    },
+    "8B": {
+      "total": 256,
+      "arithmetic_checked": 243,
+      "within_128": 243,
+      "max_tokens": 108
+    }
+  },
+  "results": {
+    "1.7B/student/0": {
+      "questions": 64,
+      "positions": 64,
+      "clipped_positions": 55,
+      "mean_clipped_teacher_mass": 0.7208502816502005,
+      "mean_clip_forward_cos": -0.051117051080113426,
+      "negative_clip_forward": 33,
+      "ce_cos": {
+        "clipped": null,
+        "forward": null,
+        "reverse": null
+      },
+      "target_direction_reversals": 36,
+      "eos_direction_reversals": 32
+    },
+    "1.7B/student/16": {
+      "questions": 64,
+      "positions": 64,
+      "clipped_positions": 12,
+      "mean_clipped_teacher_mass": 0.08951105212327093,
+      "mean_clip_forward_cos": 0.6508065361254429,
+      "negative_clip_forward": 11,
+      "ce_cos": {
+        "clipped": null,
+        "forward": null,
+        "reverse": null
+      },
+      "target_direction_reversals": 11,
+      "eos_direction_reversals": 11
+    },
+    "1.7B/student/32": {
+      "questions": 64,
+      "positions": 64,
+      "clipped_positions": 6,
+      "mean_clipped_teacher_mass": 0.08040033467113972,
+      "mean_clip_forward_cos": 0.8339617677408173,
+      "negative_clip_forward": 5,
+      "ce_cos": {
+        "clipped": null,
+        "forward": null,
+        "reverse": null
+      },
+      "target_direction_reversals": 5,
+      "eos_direction_reversals": 6
+    },
+    "1.7B/equation": {
+      "questions": 59,
+      "positions": 1677,
+      "clipped_positions": 318,
+      "mean_clipped_teacher_mass": 0.15980122708042738,
+      "mean_clip_forward_cos": 0.7174799608011159,
+      "negative_clip_forward": 230,
+      "ce_cos": {
+        "clipped": -0.007635813694669747,
+        "forward": 0.0173928907135726,
+        "reverse": 0.0170459330035499
+      },
+      "target_direction_reversals": 223,
+      "eos_direction_reversals": 217
+    },
+    "1.7B/answer": {
+      "questions": 59,
+      "positions": 433,
+      "clipped_positions": 34,
+      "mean_clipped_teacher_mass": 0.060713701453991985,
+      "mean_clip_forward_cos": 0.8908397735579867,
+      "negative_clip_forward": 25,
+      "ce_cos": {
+        "clipped": 0.6159710275849978,
+        "forward": 0.6154358257315012,
+        "reverse": 0.460917640820348
+      },
+      "target_direction_reversals": 23,
+      "eos_direction_reversals": 22
+    },
+    "1.7B/eos": {
+      "questions": 59,
+      "positions": 59,
+      "clipped_positions": 2,
+      "mean_clipped_teacher_mass": 0.03386623879610482,
+      "mean_clip_forward_cos": 0.93221789075619,
+      "negative_clip_forward": 2,
+      "ce_cos": {
+        "clipped": 0.9306573040890833,
+        "forward": 0.9984431431168572,
+        "reverse": 0.9926637172453083
+      },
+      "target_direction_reversals": 2,
+      "eos_direction_reversals": 2
+    },
+    "8B/student/0": {
+      "questions": 64,
+      "positions": 64,
+      "clipped_positions": 36,
+      "mean_clipped_teacher_mass": 0.47071468993090093,
+      "mean_clip_forward_cos": 0.12485028816264948,
+      "negative_clip_forward": 29,
+      "ce_cos": {
+        "clipped": null,
+        "forward": null,
+        "reverse": null
+      },
+      "target_direction_reversals": 28,
+      "eos_direction_reversals": 29
+    },
+    "8B/student/16": {
+      "questions": 64,
+      "positions": 64,
+      "clipped_positions": 9,
+      "mean_clipped_teacher_mass": 0.12182490108534694,
+      "mean_clip_forward_cos": 0.7450934630592836,
+      "negative_clip_forward": 8,
+      "ce_cos": {
+        "clipped": null,
+        "forward": null,
+        "reverse": null
+      },
+      "target_direction_reversals": 8,
+      "eos_direction_reversals": 8
+    },
+    "8B/student/32": {
+      "questions": 64,
+      "positions": 64,
+      "clipped_positions": 8,
+      "mean_clipped_teacher_mass": 0.07886868575587869,
+      "mean_clip_forward_cos": 0.7703039109225291,
+      "negative_clip_forward": 8,
+      "ce_cos": {
+        "clipped": null,
+        "forward": null,
+        "reverse": null
+      },
+      "target_direction_reversals": 8,
+      "eos_direction_reversals": 8
+    },
+    "8B/equation": {
+      "questions": 59,
+      "positions": 1677,
+      "clipped_positions": 323,
+      "mean_clipped_teacher_mass": 0.16714059486133362,
+      "mean_clip_forward_cos": 0.6730611793089005,
+      "negative_clip_forward": 288,
+      "ce_cos": {
+        "clipped": 0.5730523906939554,
+        "forward": 0.6116584777452081,
+        "reverse": 0.55081997466348
+      },
+      "target_direction_reversals": 274,
+      "eos_direction_reversals": 273
+    },
+    "8B/answer": {
+      "questions": 59,
+      "positions": 433,
+      "clipped_positions": 70,
+      "mean_clipped_teacher_mass": 0.10920325076798333,
+      "mean_clip_forward_cos": 0.7598677227647953,
+      "negative_clip_forward": 54,
+      "ce_cos": {
+        "clipped": 0.7106271912766687,
+        "forward": 0.7941747606684741,
+        "reverse": 0.6608870721734071
+      },
+      "target_direction_reversals": 44,
+      "eos_direction_reversals": 52
+    },
+    "8B/eos": {
+      "questions": 59,
+      "positions": 59,
+      "clipped_positions": 32,
+      "mean_clipped_teacher_mass": 0.5422088625067372,
+      "mean_clip_forward_cos": -0.08275113838165174,
+      "negative_clip_forward": 32,
+      "ce_cos": {
+        "clipped": -0.08275878973576424,
+        "forward": 0.9999980341027868,
+        "reverse": 0.9999617942749108
+      },
+      "target_direction_reversals": 32,
+      "eos_direction_reversals": 32
+    }
+  }
+}

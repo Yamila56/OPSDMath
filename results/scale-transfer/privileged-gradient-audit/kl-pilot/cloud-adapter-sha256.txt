@@ -1,0 +1,4 @@
+fbc00dcf9bba8b0069df79f74f133884d4611358bcccd0558f4325032a42bba2  kl-pilot/clipped/adapter/adapter_model.safetensors
+c44585e95fa2018bb7c21cdc6c44f71433656576d9ba5667fc824abab67a9ea4  kl-pilot/full/adapter/adapter_model.safetensors
+accd36c1bfb0659800319116fc5a8cc5460afe1335b16aca7916de2d10745ab5  kl-pilot-seed17/clipped/adapter/adapter_model.safetensors
+a0e83511f43076042f2085d180b8fef6f6f11411894eea5e5e2c9b5eb1a393fc  kl-pilot-seed17/full/adapter/adapter_model.safetensors

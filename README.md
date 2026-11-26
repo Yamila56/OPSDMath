@@ -122,6 +122,10 @@ In a two-seed Qwen3-8B study, exact-zero handling and full forward KL on the unp
 
 On 192 locked questions, both model sizes were reevaluated on the same GPU with four prompts and a shared numeric answer field. At capability-matched budgets of 128 tokens for 1.7B and 120 for 8B, the OPSD-minus-SFT gap was **15.48 percentage points larger at 1.7B** on the 126 questions both frozen bases solved at long budget. The common-prefix teacher probe found the same net gain of one correct continuation from masked equations at each scale. [Study](8B规模对照报告.md#两种规模的同协议复评) · [Evaluation artifacts](results/scale-transfer/crossed-budget-study)
 
+## Privileged KL ablation
+
+On a new 192-question project holdout, 8B answer-only OPSD with full forward KL scored **157/192 and 156/192** at 128 tokens, compared with **94/192 and 105/192** for vocabulary-wise clipping and **140/192** for the frozen base. The two full-KL runs retained **138/140** base-early answers each and finished **18/41 and 17/41** base-late answers within the short budget. At 512 tokens, both scored **182/192**, compared with **181/192** for the base. A paired gradient audit examines how clipping can reverse the local update direction for EOS. [Study](8B规模对照报告.md#特权蒸馏的梯度审计) · [Results and replay archives](results/scale-transfer/privileged-gradient-audit)
+
 ## References
 
 The training objective follows [Self-Distilled Reasoner](https://proceedings.mlr.press/v306/zhao26be.html). This repo adapts the training loop to one GPU and provides the training targets, evaluation, and comparisons. Data comes from [GSM8K](https://github.com/openai/grade-school-math) and [SVAMP](https://aclanthology.org/2021.naacl-main.168/). The [initial reproduction](实验报告.md) records earlier runs on a separate 256-question evaluation set.
