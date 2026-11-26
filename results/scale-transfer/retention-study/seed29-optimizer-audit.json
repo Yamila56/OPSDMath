@@ -1,0 +1,92 @@
+{
+  "seed": 29,
+  "training_ids": [
+    "04910919dc3d1d740e167854d5726041ebfce3ccf2b0b97fde31e29e0d19ad88",
+    "0495250366c568f384b7dceea4baf4e4c6a4525e6a697c75af40a8888b2cf452"
+  ],
+  "controlled_checks": {
+    "two_token_full_kl": 4.761416435241699,
+    "two_token_clipped_kl": -0.2965644598007202,
+    "momentum_only_delta": -3.337860107421875e-06,
+    "first_moment": 0.018000001087784767,
+    "second_moment": 3.996000305050984e-05
+  },
+  "exact_initial_logits": true,
+  "identical_greedy_suffixes_after_pure": true,
+  "pure_updates": [
+    {
+      "grad_norm_before": 0.0,
+      "grad_norm_after": 0.0,
+      "learning_rate": 5e-06,
+      "lora_A": {
+        "delta_l2": 5.851290552527644e-06,
+        "first_moment_l2": 0.0,
+        "second_moment_l2": 0.0
+      },
+      "lora_B": {
+        "delta_l2": 0.0,
+        "first_moment_l2": 0.0,
+        "second_moment_l2": 0.0
+      }
+    },
+    {
+      "grad_norm_before": 0.0,
+      "grad_norm_after": 0.0,
+      "learning_rate": 5e-06,
+      "lora_A": {
+        "delta_l2": 5.851290552527644e-06,
+        "first_moment_l2": 0.0,
+        "second_moment_l2": 0.0
+      },
+      "lora_B": {
+        "delta_l2": 0.0,
+        "first_moment_l2": 0.0,
+        "second_moment_l2": 0.0
+      }
+    }
+  ],
+  "mixed_preserved_all_gradients": true,
+  "mixed_update": {
+    "grad_norm_before": 0.28164640069007874,
+    "grad_norm_after": 0.09999964386224747,
+    "learning_rate": 5e-06,
+    "lora_A": {
+      "delta_l2": 5.851290552527644e-06,
+      "first_moment_l2": 0.0,
+      "second_moment_l2": 0.0
+    },
+    "lora_B": {
+      "delta_l2": 0.0290980227291584,
+      "first_moment_l2": 0.009999963454902172,
+      "second_moment_l2": 1.7168238386489065e-08
+    }
+  },
+  "perturbed_logits": {
+    "full": {
+      "loss": 0.0008929572068154812,
+      "grad_norm": 0.002696650568395853,
+      "toward_teacher": 0.0017488300800323486
+    },
+    "clipped": {
+      "loss": 6.839293200755492e-05,
+      "grad_norm": 0.007970917969942093,
+      "toward_teacher": -0.002386526670306921
+    }
+  },
+  "perturbed_anchor_update": {
+    "grad_norm_before": 0.3143823444843292,
+    "grad_norm_after": 0.09999968111515045,
+    "learning_rate": 5e-06,
+    "lora_A": {
+      "delta_l2": 0.011218682862818241,
+      "first_moment_l2": 0.0024675324093550444,
+      "second_moment_l2": 4.163532096868039e-08
+    },
+    "lora_B": {
+      "delta_l2": 0.04599158838391304,
+      "first_moment_l2": 0.009690751321613789,
+      "second_moment_l2": 2.6365343686052256e-08
+    }
+  },
+  "full_kl_after_recovery": 0.0007518145721405745
+}

@@ -1,0 +1,166 @@
+{
+  "equations-17": {
+    "updates": 64,
+    "branches": {
+      "sft": 256
+    },
+    "rollout_tokens": 0,
+    "seconds": 92.89211808517575,
+    "init_seed": 17,
+    "data_seed": 17,
+    "rollout_seed": null,
+    "rollout_rng": "continuous torch RNG after initialization",
+    "routing_rng": null,
+    "eval_seed": null,
+    "evaluation": "deterministic greedy generation",
+    "ordered_ids_sha256": "8ef2ec708d7cc2cdec4da9934cc108b34740ff94a3dc85cdec86b36677eb2cfb"
+  },
+  "privileged-17": {
+    "updates": 64,
+    "branches": {
+      "answer": 256
+    },
+    "rollout_tokens": 28630,
+    "seconds": 489.36461409181356,
+    "init_seed": 17,
+    "data_seed": 17,
+    "rollout_seed": null,
+    "rollout_rng": "continuous torch RNG after initialization",
+    "routing_rng": null,
+    "eval_seed": null,
+    "evaluation": "deterministic greedy generation",
+    "ordered_ids_sha256": "8ef2ec708d7cc2cdec4da9934cc108b34740ff94a3dc85cdec86b36677eb2cfb"
+  },
+  "unprivileged-17": {
+    "updates": 64,
+    "branches": {
+      "none": 256
+    },
+    "rollout_tokens": 26210,
+    "seconds": 478.7642182186246,
+    "init_seed": 17,
+    "data_seed": 17,
+    "rollout_seed": null,
+    "rollout_rng": "continuous torch RNG after initialization",
+    "routing_rng": null,
+    "eval_seed": null,
+    "evaluation": "deterministic greedy generation",
+    "ordered_ids_sha256": "8ef2ec708d7cc2cdec4da9934cc108b34740ff94a3dc85cdec86b36677eb2cfb"
+  },
+  "random-17": {
+    "updates": 64,
+    "branches": {
+      "none": 196,
+      "answer": 60
+    },
+    "rollout_tokens": 26226,
+    "seconds": 501.21044735610485,
+    "init_seed": 17,
+    "data_seed": 17,
+    "rollout_seed": null,
+    "rollout_rng": "continuous torch RNG after initialization",
+    "routing_rng": "opsd-teacher-assignment:17",
+    "eval_seed": null,
+    "evaluation": "deterministic greedy generation",
+    "ordered_ids_sha256": "8ef2ec708d7cc2cdec4da9934cc108b34740ff94a3dc85cdec86b36677eb2cfb"
+  },
+  "behavior-17": {
+    "updates": 64,
+    "branches": {
+      "none": 196,
+      "answer": 60
+    },
+    "rollout_tokens": 25876,
+    "seconds": 471.3981215469539,
+    "init_seed": 17,
+    "data_seed": 17,
+    "rollout_seed": null,
+    "rollout_rng": "continuous torch RNG after initialization",
+    "routing_rng": null,
+    "eval_seed": null,
+    "evaluation": "deterministic greedy generation",
+    "ordered_ids_sha256": "8ef2ec708d7cc2cdec4da9934cc108b34740ff94a3dc85cdec86b36677eb2cfb"
+  },
+  "equations-29": {
+    "updates": 64,
+    "branches": {
+      "sft": 256
+    },
+    "rollout_tokens": 0,
+    "seconds": 86.64451592415571,
+    "init_seed": 29,
+    "data_seed": 29,
+    "rollout_seed": null,
+    "rollout_rng": "continuous torch RNG after initialization",
+    "routing_rng": null,
+    "eval_seed": null,
+    "evaluation": "deterministic greedy generation",
+    "ordered_ids_sha256": "1c5b86c8a29902da9886671b8938bffdd0f632c09f79742620ebcb2c155777f0"
+  },
+  "privileged-29": {
+    "updates": 64,
+    "branches": {
+      "answer": 256
+    },
+    "rollout_tokens": 28745,
+    "seconds": 487.3157862201333,
+    "init_seed": 29,
+    "data_seed": 29,
+    "rollout_seed": null,
+    "rollout_rng": "continuous torch RNG after initialization",
+    "routing_rng": null,
+    "eval_seed": null,
+    "evaluation": "deterministic greedy generation",
+    "ordered_ids_sha256": "1c5b86c8a29902da9886671b8938bffdd0f632c09f79742620ebcb2c155777f0"
+  },
+  "unprivileged-29": {
+    "updates": 64,
+    "branches": {
+      "none": 256
+    },
+    "rollout_tokens": 26188,
+    "seconds": 472.7744939737022,
+    "init_seed": 29,
+    "data_seed": 29,
+    "rollout_seed": null,
+    "rollout_rng": "continuous torch RNG after initialization",
+    "routing_rng": null,
+    "eval_seed": null,
+    "evaluation": "deterministic greedy generation",
+    "ordered_ids_sha256": "1c5b86c8a29902da9886671b8938bffdd0f632c09f79742620ebcb2c155777f0"
+  },
+  "random-29": {
+    "updates": 64,
+    "branches": {
+      "none": 196,
+      "answer": 60
+    },
+    "rollout_tokens": 26024,
+    "seconds": 487.9219661876559,
+    "init_seed": 29,
+    "data_seed": 29,
+    "rollout_seed": null,
+    "rollout_rng": "continuous torch RNG after initialization",
+    "routing_rng": "opsd-teacher-assignment:29",
+    "eval_seed": null,
+    "evaluation": "deterministic greedy generation",
+    "ordered_ids_sha256": "1c5b86c8a29902da9886671b8938bffdd0f632c09f79742620ebcb2c155777f0"
+  },
+  "behavior-29": {
+    "updates": 64,
+    "branches": {
+      "answer": 60,
+      "none": 196
+    },
+    "rollout_tokens": 26352,
+    "seconds": 471.69423538818955,
+    "init_seed": 29,
+    "data_seed": 29,
+    "rollout_seed": null,
+    "rollout_rng": "continuous torch RNG after initialization",
+    "routing_rng": null,
+    "eval_seed": null,
+    "evaluation": "deterministic greedy generation",
+    "ordered_ids_sha256": "1c5b86c8a29902da9886671b8938bffdd0f632c09f79742620ebcb2c155777f0"
+  }
+}

@@ -30,7 +30,10 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("gsm8k_train", type=Path)
     parser.add_argument("output", type=Path)
+    parser.add_argument("--skip-first", type=int, default=0, help="Exclude this many previously scored sorted IDs.")
     args = parser.parse_args()
+    if args.skip_first < 0:
+        parser.error("--skip-first must be nonnegative.")
     train = {normalize(json.loads(line)["problem"])
              for line in args.gsm8k_train.read_text(encoding="utf-8").splitlines()}
     with urlopen(SOURCE, timeout=30) as stream:
@@ -53,7 +56,7 @@ def main():
         previous = examples.setdefault(key, result)
         if Decimal(previous["answer"]) != Decimal(result["answer"]):
             raise ValueError(f"Conflicting answers for {identity}")
-    selected = sorted(examples.values(), key=lambda row: row["id"])[:SAMPLE_SIZE]
+    selected = sorted(examples.values(), key=lambda row: row["id"])[args.skip_first:args.skip_first + SAMPLE_SIZE]
     if len(selected) != SAMPLE_SIZE:
         raise ValueError("Insufficient unique questions")
     args.output.mkdir(parents=True, exist_ok=False)
@@ -66,6 +69,9 @@ def main():
                     primary_comparison="answer-only OPSD versus equation-chain SFT under numeric scoring",
                     seeds=[17, 29],
                     sha256={file.name: digest(file.read_bytes()) for file in sorted(args.output.glob("*.jsonl"))})
+    if args.skip_first:
+        manifest["selection"] = f"Skip the first {args.skip_first} sorted IDs after normalized GSM8K-train exclusion and deduplication"
+        manifest["primary_comparison"] = None
     (args.output / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
 
 

@@ -1,0 +1,162 @@
+{
+  "behavior-17/True": {
+    "n": 359,
+    "mean_eos_probability_change": 9.728715198579639e-05,
+    "logp_delta": {
+      "answer": -0.0008280920303282704,
+      "eos": 0.0072612648101965,
+      "non_answer_numeric": 3.434052525667299e-05,
+      "other": 8.980476401229302e-05
+    }
+  },
+  "behavior-17/False": {
+    "n": 9,
+    "mean_eos_probability_change": 0.00019008003871372062,
+    "logp_delta": {
+      "answer": 0.0003230653430248009,
+      "eos": 0.035639232490211725,
+      "non_answer_numeric": 0.0011125681952354957,
+      "other": -0.0011429096443555423
+    }
+  },
+  "random-17/True": {
+    "n": 356,
+    "mean_eos_probability_change": -0.00011564867744531381,
+    "logp_delta": {
+      "answer": 0.0013849267028760274,
+      "eos": -0.004824884739865154,
+      "non_answer_numeric": -0.0001827164464037326,
+      "other": 0.0004878978267979692
+    }
+  },
+  "random-17/False": {
+    "n": 12,
+    "mean_eos_probability_change": 2.5356677384101396e-05,
+    "logp_delta": {
+      "answer": -0.0038938534597311525,
+      "eos": -0.010866792168766504,
+      "non_answer_numeric": -0.0028009002276920096,
+      "other": 0.00030810123626246404
+    }
+  },
+  "privileged-17/False": {
+    "n": 117,
+    "mean_eos_probability_change": 0.0011120994255699155,
+    "logp_delta": {
+      "answer": -0.018446956869555584,
+      "eos": 0.06447612891872238,
+      "non_answer_numeric": -0.026903808734387302,
+      "other": -0.1398205618708853
+    }
+  },
+  "privileged-17/True": {
+    "n": 251,
+    "mean_eos_probability_change": 0.0016268616219026178,
+    "logp_delta": {
+      "answer": -0.03881575452497805,
+      "eos": 0.03211464329390545,
+      "non_answer_numeric": -0.04254187557329075,
+      "other": -0.14052537081812674
+    }
+  },
+  "equations-17/True": {
+    "n": 299,
+    "mean_eos_probability_change": 0.0046349398287804456,
+    "logp_delta": {
+      "answer": -0.1337581497211355,
+      "eos": 0.03814763544757741,
+      "non_answer_numeric": -0.013190214877005106,
+      "other": -0.38196136239234557
+    }
+  },
+  "equations-17/False": {
+    "n": 69,
+    "mean_eos_probability_change": 0.0031505620021784623,
+    "logp_delta": {
+      "answer": -0.0879733243268145,
+      "eos": 0.023628902245201915,
+      "non_answer_numeric": -0.021369161247311808,
+      "other": -0.35091252109751153
+    }
+  },
+  "behavior-29/True": {
+    "n": 362,
+    "mean_eos_probability_change": 5.644472371177011e-06,
+    "logp_delta": {
+      "answer": 0.00020741144775627228,
+      "eos": 0.002533662363850623,
+      "non_answer_numeric": 0.00014357009014517419,
+      "other": 0.0006142793303234838
+    }
+  },
+  "behavior-29/False": {
+    "n": 6,
+    "mean_eos_probability_change": 0.00033560282848019645,
+    "logp_delta": {
+      "answer": 4.1025046021066677e-07,
+      "eos": 0.058576682675629856,
+      "non_answer_numeric": -0.0002491344228709507,
+      "other": -0.0010333059148876047
+    }
+  },
+  "random-29/True": {
+    "n": 361,
+    "mean_eos_probability_change": -7.139171497537157e-05,
+    "logp_delta": {
+      "answer": 0.0010259145687790214,
+      "eos": -0.0012852844676993918,
+      "non_answer_numeric": -0.00021449631263814156,
+      "other": 0.00044405819946270893
+    }
+  },
+  "random-29/False": {
+    "n": 7,
+    "mean_eos_probability_change": 0.0002219384948165515,
+    "logp_delta": {
+      "answer": -1.0407803674116254e-05,
+      "eos": 0.04492860734462738,
+      "non_answer_numeric": -0.003431610077668372,
+      "other": -0.0010270088543229785
+    }
+  },
+  "privileged-29/False": {
+    "n": 131,
+    "mean_eos_probability_change": 0.002222737811093314,
+    "logp_delta": {
+      "answer": -0.07900465537883794,
+      "eos": 0.06163981605034664,
+      "non_answer_numeric": -0.03781114162516915,
+      "other": -0.16625915700906135
+    }
+  },
+  "privileged-29/True": {
+    "n": 237,
+    "mean_eos_probability_change": 0.003845865718467867,
+    "logp_delta": {
+      "answer": -0.14111478201089755,
+      "eos": 0.037898562645952545,
+      "non_answer_numeric": -0.047813544777330866,
+      "other": -0.1684324439031634
+    }
+  },
+  "equations-29/True": {
+    "n": 296,
+    "mean_eos_probability_change": 0.0043508549616487,
+    "logp_delta": {
+      "answer": -0.11943489254594751,
+      "eos": 0.03253375810897875,
+      "non_answer_numeric": -0.013089444054762821,
+      "other": -0.38792074557850276
+    }
+  },
+  "equations-29/False": {
+    "n": 72,
+    "mean_eos_probability_change": 0.003139542001527966,
+    "logp_delta": {
+      "answer": -0.08377603194427363,
+      "eos": 0.03367192355024665,
+      "non_answer_numeric": -0.021409804785480477,
+      "other": -0.34512821568367724
+    }
+  }
+}

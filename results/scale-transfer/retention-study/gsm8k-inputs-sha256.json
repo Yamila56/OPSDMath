@@ -1,0 +1,14 @@
+{
+  "revision": "3101c7d5072418e28b9008a6636bde82a006892c",
+  "excluded_reviewed": 768,
+  "train": 256,
+  "test": 551,
+  "sha256": {
+    "equations/train.jsonl": "70d783ad7d2da69465d8aaaaacd86e2827ccae59f18491d9edfabe5b245f277b",
+    "test/inputs.jsonl": "0b963683842bb1ce335f2f6b85c9e0d79c73695b55318d5f7d4e124c33c774cf",
+    "test/labels.jsonl": "01c2ba892032e6453068c41d0c7d106d10b47a6302d65c4e29f2485fa484bee9",
+    "train.jsonl": "56a0e4de1e77152e08a6141c930effe60b4f83c00b25351c9d28234345ae6d58",
+    "training-cohort/inputs.jsonl": "327a37ad176cda5d93431bb6caee13237537222bc902fa2215948b9c96bb02a4",
+    "training-cohort/labels.jsonl": "b8b04da845f4510190f32114ae67bb3e8977a2af96fd43a99d1f15427401978d"
+  }
+}

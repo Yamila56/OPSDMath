@@ -1,0 +1,67 @@
+{
+  "short": 128,
+  "long": 512,
+  "frozen_group": "base",
+  "cohorts": {
+    "frozen_early": 319,
+    "frozen_late": 149,
+    "frozen_wrong_at_both": 44
+  },
+  "groups": {
+    "base": {
+      "short_correct_by_frozen_cohort": {
+        "frozen_early": 319,
+        "frozen_late": 0,
+        "frozen_wrong_at_both": 0
+      },
+      "long_correct": 468,
+      "late_previously_unparsed": 144,
+      "late_previously_wrong": 5,
+      "early_correct_later_wrong": 0
+    },
+    "answer17": {
+      "short_correct_by_frozen_cohort": {
+        "frozen_early": 306,
+        "frozen_late": 52,
+        "frozen_wrong_at_both": 3
+      },
+      "long_correct": 465,
+      "late_previously_unparsed": 102,
+      "late_previously_wrong": 2,
+      "early_correct_later_wrong": 0
+    },
+    "answer29": {
+      "short_correct_by_frozen_cohort": {
+        "frozen_early": 278,
+        "frozen_late": 9,
+        "frozen_wrong_at_both": 0
+      },
+      "long_correct": 466,
+      "late_previously_unparsed": 175,
+      "late_previously_wrong": 4,
+      "early_correct_later_wrong": 0
+    },
+    "equationsft17": {
+      "short_correct_by_frozen_cohort": {
+        "frozen_early": 257,
+        "frozen_late": 62,
+        "frozen_wrong_at_both": 4
+      },
+      "long_correct": 343,
+      "late_previously_unparsed": 19,
+      "late_previously_wrong": 1,
+      "early_correct_later_wrong": 0
+    },
+    "equationsft29": {
+      "short_correct_by_frozen_cohort": {
+        "frozen_early": 247,
+        "frozen_late": 60,
+        "frozen_wrong_at_both": 2
+      },
+      "long_correct": 327,
+      "late_previously_unparsed": 18,
+      "late_previously_wrong": 0,
+      "early_correct_later_wrong": 0
+    }
+  }
+}

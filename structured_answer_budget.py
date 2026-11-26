@@ -69,10 +69,11 @@ class NumericField(LogitsProcessor):
 
 @torch.inference_mode()
 def generate(model, tokenizer, batch, *, budget=BUDGET, draft_cap=DRAFT_CAP, teacher_context=None,
-             budget_hint=False):
+             budget_hint=False, key_steps=None, thinking=False):
     device = model.device
     prompts = [prompt(tokenizer, row, privileged=teacher_context is not None,
-                      context=teacher_context or "full", output_budget=budget if budget_hint else None) for row in batch]
+                      context=teacher_context or "full", output_budget=budget if budget_hint else None,
+                      key_steps=key_steps, thinking=thinking) for row in batch]
     drafts = batch_suffixes(model, tokenizer, prompts, draft_cap, False, device)
     eos_config = model.generation_config.eos_token_id
     eos = {eos_config} if isinstance(eos_config, int) else set(eos_config)

@@ -1,0 +1,21 @@
+{
+  "pool_sha256": "2b0868d7c2751768f5d440596aca6062e9e1686fa24e3cef7f3af20aa562d6a3",
+  "model": "/root/autodl-tmp/opsd-calibration-20261125/model",
+  "model_index_sha256": "f9fdbcb91c23971c13ec5d5f2573d2349e8f61f2f049371ec699281748fdb1bc",
+  "torch": "2.8.0+cu128",
+  "gpu": "NVIDIA GeForce RTX 5090",
+  "batch": 4,
+  "quotas": 24,
+  "counts": {
+    "early": 222,
+    "late": 69,
+    "early_wrong_eos": 8,
+    "other_wrong": 9
+  },
+  "cuts": [
+    32,
+    64,
+    96
+  ],
+  "eligible": 171
+}

@@ -1,0 +1,19 @@
+{
+  "cases_sha256": "2f72106a6c2ef6f592c77f6be8fac5a039a419acd584f34157acf9357558d49c",
+  "n": 28,
+  "prefix": 60,
+  "total": 120,
+  "prefix_sha256": {
+    "1p7b": "f79a2cd2c9c8b979ab5bc45a22bd23a6d179958b2fd313e7f46f52688795574a",
+    "8b": "f4bc82542cf64889ecf8b6e424964917cbafd9ac6744facd159cf78acbc71f42"
+  },
+  "model_tokenizer_sha256": "aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4",
+  "models": {
+    "1p7b": "model1p7",
+    "8b": "/root/autodl-tmp/opsd-calibration-20261125/model"
+  },
+  "batch": 24,
+  "greedy": true,
+  "thinking": false,
+  "status": "retrospective common-late diagnostic"
+}

@@ -114,6 +114,14 @@ The standard-prompt OPSD advantage observed at 1.7B appears in one of the two 8B
 
 [8B protocol and reproduction](8B规模对照报告.md) · [Complete 8B scorecard](results/scale-transfer/qwen3-8b.json)
 
+## Retention-aware self-distillation
+
+In a two-seed Qwen3-8B study, exact-zero handling and full forward KL on the unprivileged branch kept the no-op control token-identical to the frozen base. Behavior-based assignment recovered 371/551 and 374/551 short-budget answers on the reviewed GSM8K set. The matched random assignment reached 365/551 and 370/551. Both behavior-based runs reached 233/256 on a new SVAMP sample, compared with 236/256 for the frozen base. The results support retention relative to uniform privileged distillation and leave the incremental benefit of behavior-based assignment unestablished. [Study and optimizer audit](保留感知蒸馏报告.md) · [GSM8K scores](results/scale-transfer/retention-study/gsm8k-results.json) · [SVAMP scores](results/scale-transfer/retention-study/svamp-results.json)
+
+## Matched-budget reevaluation
+
+On 192 locked questions, both model sizes were reevaluated on the same GPU with four prompts and a shared numeric answer field. At capability-matched budgets of 128 tokens for 1.7B and 120 for 8B, the OPSD-minus-SFT gap was **15.48 percentage points larger at 1.7B** on the 126 questions both frozen bases solved at long budget. The common-prefix teacher probe found the same net gain of one correct continuation from masked equations at each scale. [Study](8B规模对照报告.md#两种规模的同协议复评) · [Evaluation artifacts](results/scale-transfer/crossed-budget-study)
+
 ## References
 
 The training objective follows [Self-Distilled Reasoner](https://proceedings.mlr.press/v306/zhao26be.html). This repo adapts the training loop to one GPU and provides the training targets, evaluation, and comparisons. Data comes from [GSM8K](https://github.com/openai/grade-school-math) and [SVAMP](https://aclanthology.org/2021.naacl-main.168/). The [initial reproduction](实验报告.md) records earlier runs on a separate 256-question evaluation set.

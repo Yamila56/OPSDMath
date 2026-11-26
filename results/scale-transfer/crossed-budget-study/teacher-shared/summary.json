@@ -1,0 +1,124 @@
+{
+  "1p7b": {
+    "1p7b": {
+      "none": {
+        "n": 28,
+        "correct": 1,
+        "strict": 1,
+        "improved": 0,
+        "regressed": 0
+      },
+      "answer": {
+        "n": 28,
+        "correct": 2,
+        "strict": 1,
+        "improved": 1,
+        "regressed": 0
+      },
+      "masked_equations": {
+        "n": 28,
+        "correct": 2,
+        "strict": 1,
+        "improved": 1,
+        "regressed": 0
+      }
+    },
+    "8b": {
+      "none": {
+        "n": 28,
+        "correct": 1,
+        "strict": 1,
+        "improved": 0,
+        "regressed": 0
+      },
+      "answer": {
+        "n": 28,
+        "correct": 2,
+        "strict": 2,
+        "improved": 1,
+        "regressed": 0
+      },
+      "masked_equations": {
+        "n": 28,
+        "correct": 1,
+        "strict": 1,
+        "improved": 0,
+        "regressed": 0
+      }
+    }
+  },
+  "8b": {
+    "1p7b": {
+      "none": {
+        "n": 28,
+        "correct": 1,
+        "strict": 0,
+        "improved": 0,
+        "regressed": 0
+      },
+      "answer": {
+        "n": 28,
+        "correct": 1,
+        "strict": 1,
+        "improved": 0,
+        "regressed": 0
+      },
+      "masked_equations": {
+        "n": 28,
+        "correct": 2,
+        "strict": 0,
+        "improved": 1,
+        "regressed": 0
+      }
+    },
+    "8b": {
+      "none": {
+        "n": 28,
+        "correct": 2,
+        "strict": 2,
+        "improved": 0,
+        "regressed": 0
+      },
+      "answer": {
+        "n": 28,
+        "correct": 3,
+        "strict": 3,
+        "improved": 1,
+        "regressed": 0
+      },
+      "masked_equations": {
+        "n": 28,
+        "correct": 2,
+        "strict": 2,
+        "improved": 1,
+        "regressed": 1
+      }
+    }
+  },
+  "paired_effects": {
+    "1p7b": {
+      "n": 28,
+      "pp": 1.7857142857142856,
+      "interval95_pp": [
+        0.0,
+        5.357142857142857
+      ]
+    },
+    "8b": {
+      "n": 28,
+      "pp": 1.7857142857142856,
+      "interval95_pp": [
+        -5.357142857142857,
+        10.714285714285714
+      ]
+    },
+    "cross_scale": {
+      "n": 28,
+      "pp": 0.0,
+      "interval95_pp": [
+        -8.928571428571429,
+        7.142857142857142
+      ]
+    }
+  }
+}
