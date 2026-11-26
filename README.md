@@ -4,9 +4,15 @@
 
 OPSDMath studies how post-training changes which math problems a Qwen model can answer within a fixed token budget. It combines a single-GPU implementation of on-policy self-distillation (OPSD), a token-level gradient audit, and a matched training experiment on Qwen3-8B.
 
+![Online student and adapter-disabled teacher scoring a shared token prefix](assets/figures/overview.svg)
+
 [Main results](#qwen3-8b-kl-ablation) · [Trainer checks](#training-and-gradient-audit) · [Reproduce](#recompute-the-published-results) · [Next experiments](NEXT_EXPERIMENTS.md)
 
 ## Qwen3-8B KL ablation
+
+![Budget accuracy, early retention and late acceleration, and paired differences](assets/figures/main_results.svg)
+
+Each dot in (a–b) represents a seed (identical values can overlap). Panel (c) shows mean 128-token differences and question-paired 95% intervals.
 
 **Removing vocabulary-wise KL clipping improved 128-token numeric accuracy by 29.69 percentage points** on the 192-question project holdout. The question-paired 95% interval was **[23.70, 35.68] pp**, averaged over seeds 17 and 29. Each matched pair used the same 256 training questions, question order, rollout seed, 64 optimizer updates, answer-only teacher, and 128-token training cap. Online trajectories could diverge as the student weights changed.
 
@@ -26,6 +32,10 @@ On **SVAMP**, the two full-KL runs and the base each reached **236/256** at 128 
 The 192 questions come from the original GSM8K training partition and were held out from project training and earlier model selection. The two seeds share those same questions. The controlled result identifies a cost of clipping in this 8B recipe. Its applicability to other model families and training schedules is open. [Experimental report](8B规模对照报告.md#第二种子算式-sft-与题源迁移) · [Paired scores](results/scale-transfer/privileged-gradient-audit/kl-pilot/paired-two-seed.json) · [Split manifest](results/scale-transfer/privileged-gradient-audit/kl-pilot/data-manifest.json)
 
 ## Training and gradient audit
+
+![Full and capped token contributions and observed EOS direction reversals](assets/figures/mechanism.svg)
+
+Panels (a–b) use illustrative teacher and student distributions, with a cap of 0.05 per vocabulary contribution. Clipping a contribution removes its direct derivative, while softmax normalization couples all student logits. Panel (c) counts real reference endings where the local descent direction decreases EOS log-probability (temperature 1.1). Full KL had zero such endings in every group.
 
 - **Online rollouts and a shared frozen teacher.** Before each optimizer update, the current LoRA student generates a batch of trajectories. With its adapter disabled, the same base model scores the identical completion positions under a prompt that includes the known answer. Evaluation prompts withhold the reference answer. Full forward KL uses the entire vocabulary at each scored position. [Single-GPU implementation](run_math.py)
 - **Local EOS update direction.** At the end of 59 verified compact references, a local descent step on logits under vocabulary-wise clipping would decrease the EOS log-probability at **32/59** positions for frozen 8B and **2/59** for frozen 1.7B. The two existing 8B checkpoints gave **26/59** and **22/59**. Full KL raised it at all these reference endings. The analytic derivatives were checked with autograd. How much of the generation gap this mechanism accounts for remains open. [Audit code](audit_privileged_gradients.py) · [Position-level results](results/scale-transfer/privileged-gradient-audit)
@@ -61,3 +71,5 @@ For a model rerun, use the archived `clipped/config.json` and `full/config.json`
 ## References
 
 The OPSD training setup follows [Self-Distilled Reasoner](https://proceedings.mlr.press/v306/zhao26be.html). Related preprints study [correction reversal under vocabulary-wise clipping](https://arxiv.org/abs/2609.38995) and [premature termination and repetition in OPSD](https://arxiv.org/abs/2611.19925). The main evaluation uses [GSM8K](https://github.com/openai/grade-school-math) and [SVAMP](https://aclanthology.org/2021.naacl-main.168/).
+
+Regenerate the README figures with Python, NumPy, Matplotlib and Pillow by running `python scripts/figures/render.py` from the repository root. [Plotting source](scripts/figures/render.py) · [SVG and 300 dpi PNG figures](assets/figures)
