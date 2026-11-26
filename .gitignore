@@ -11,3 +11,9 @@ __pycache__/
 *.gguf
 *.pem
 *.key
+
+/build/
+/dist/
+/*.egg-info/
+/.pytest_cache/
+/models/

@@ -1,0 +1,7 @@
+# Training method
+
+The current student generates one accumulation group before each optimizer step. The teacher uses the same weights with the adapter disabled and scores completion positions on the student's sampled prefix. The teacher context adds the reference answer. The student works from the question with the shared short-budget instruction.
+
+The loss uses teacher-to-student forward KL over the complete vocabulary at temperature 1.1. The clipped variant caps each signed contribution at 0.05 before summation over the vocabulary and averaging over completion positions. When teacher and student logits match exactly, the existing implementation returns exact zero loss and gradient. The equation-chain SFT control uses teacher-forced cross-entropy.
+
+The [trainer](../opsdmath/training/trainer.py) uses AdamW, linear learning-rate decay and completion-only logits. [Prompt construction](../opsdmath/training/prompts.py), [sampling and frozen scoring](../opsdmath/training/rollout.py), [KL](../opsdmath/objectives/kl.py) and [checkpoint state](../opsdmath/training/checkpoint.py) have separate source modules. The checkpoint records training identity, ordered row digest, optimizer and scheduler state, adapter reference and RNG state.

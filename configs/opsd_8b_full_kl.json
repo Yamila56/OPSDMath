@@ -1,0 +1,48 @@
+{
+  "base_model": "Qwen/Qwen3-8B",
+  "model_revision": "b968826d9c46dd6066d109eabc6255188de91218",
+  "model_index_sha256": "f9fdbcb91c23971c13ec5d5f2573d2349e8f61f2f049371ec699281748fdb1bc",
+  "dataset_revision": "3101c7d5072418e28b9008a6636bde82a006892c",
+  "mode": "opsd",
+  "training_examples": 256,
+  "updates": 64,
+  "split": "GSM8K project train",
+  "optimizer": "AdamW",
+  "scheduler": "linear decay to zero",
+  "rollout_temperature": 1.1,
+  "rollout_top_p": 0.95,
+  "rollout_top_k": 20,
+  "lora_alpha": 128,
+  "default_output": "runs/full-SEED",
+  "arguments": {
+    "device": "cuda",
+    "learning_rate": 5e-06,
+    "max_grad_norm": 0.1,
+    "kl_clip": null,
+    "student_thinking": false,
+    "teacher_thinking": false,
+    "log_diagnostics": true,
+    "rank": 64,
+    "accumulation": 4,
+    "cap": 128,
+    "output_budget": 128,
+    "sft_reference_cap": 320,
+    "teacher_context": "answer",
+    "fixed_rollout": false,
+    "unclipped_anchor": false,
+    "rollout_batch_size": null
+  },
+  "seeds": {
+    "17": {
+      "init_seed": 17,
+      "data_seed": 17,
+      "rollout_seed": 10017
+    },
+    "29": {
+      "init_seed": 29,
+      "data_seed": 29,
+      "rollout_seed": 10029
+    }
+  },
+  "ordered_ids_sha256": "b66f8657dd3a7c3506513b6072f2681e42ca5c9f6e06fff65c52a006d1db272d"
+}

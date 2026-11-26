@@ -1,0 +1,31 @@
+{
+  "base_model": "Qwen/Qwen3-8B",
+  "model_revision": "b968826d9c46dd6066d109eabc6255188de91218",
+  "model_index_sha256": "f9fdbcb91c23971c13ec5d5f2573d2349e8f61f2f049371ec699281748fdb1bc",
+  "dataset_revision": "3101c7d5072418e28b9008a6636bde82a006892c",
+  "mode": "sft",
+  "training_examples": 256,
+  "updates": 64,
+  "split": "GSM8K project train with validated equation targets",
+  "optimizer": "AdamW",
+  "scheduler": "linear decay to zero",
+  "lora_alpha": 128,
+  "default_output": "runs/equation-sft-SEED",
+  "arguments": {
+    "device": "cuda",
+    "rank": 64,
+    "accumulation": 4,
+    "learning_rate": 5e-06,
+    "max_grad_norm": 0.1,
+    "cap": 256,
+    "sft_reference_cap": 320,
+    "student_thinking": false,
+    "teacher_thinking": false
+  },
+  "seeds": {
+    "17": {},
+    "29": {}
+  },
+  "seed_policy": "Initialization and data order use the selected training seed. SFT does not sample rollouts.",
+  "ordered_ids_sha256": "b66f8657dd3a7c3506513b6072f2681e42ca5c9f6e06fff65c52a006d1db272d"
+}

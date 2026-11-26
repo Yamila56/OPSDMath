@@ -1,0 +1,15 @@
+{
+  "base_model": "Qwen/Qwen3-8B",
+  "model_revision": "b968826d9c46dd6066d109eabc6255188de91218",
+  "model_index_sha256": "f9fdbcb91c23971c13ec5d5f2573d2349e8f61f2f049371ec699281748fdb1bc",
+  "dataset_revision": "3101c7d5072418e28b9008a6636bde82a006892c",
+  "inputs_sha256": "a069bd78fc6216638003e2e4a5d771ca17e9ab115ed9e9df762dd193323efb58",
+  "labels_sha256": "0882cbcceafaf819798885168a93c24b69b3f7898e6b52ddf5f71574d088fb55",
+  "questions": 192,
+  "batch_size": 24,
+  "short": 128,
+  "long": 512,
+  "prompt": "combined-128",
+  "thinking": false,
+  "default_output": "runs/kl-evaluation"
+}
