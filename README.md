@@ -1,133 +1,63 @@
 # OPSDMath
 
-A reproducible study of short-budget math answers with Qwen3-1.7B and Qwen3-8B. It compares on-policy self-distillation (OPSD) and supervised fine-tuning (SFT) at the same generation cap, and measures when each model gives a correct number in a usable format.
+**Gradient Analysis and Budget-Efficient On-Policy Self-Distillation**
 
-## Qwen3-1.7B results
+OPSDMath studies how post-training changes which math problems a Qwen model can answer within a fixed token budget. It combines a single-GPU implementation of on-policy self-distillation (OPSD), a token-level gradient audit, and a matched training experiment on Qwen3-8B.
 
-At **128 generated tokens**, an OPSD teacher that sees only the final training answer outperforms SFT on compact equation chains under numeric extraction. Numbers are correct answers per evaluation split.
+[Main results](#qwen3-8b-kl-ablation) · [Trainer checks](#training-and-gradient-audit) · [Reproduce](#recompute-the-published-results) · [Next experiments](NEXT_EXPERIMENTS.md)
 
-| Dataset | Answer-only teacher OPSD, seeds 17 / 29 | Equation-chain SFT, seeds 17 / 29 |
-| --- | ---: | ---: |
-| GSM8K confirmation | 263/512 · 258/512 | 195/512 · 195/512 |
-| SVAMP sample | 212/256 · 206/256 | 138/256 · 131/256 |
+## Qwen3-8B KL ablation
 
-GSM8K improvements of **13.28 and 12.30 percentage points** come despite equation-chain SFT generating shorter answers and producing more extractable answers. SFT follows the exact answer-line format much more often. At 512 tokens, full-solution SFT scores 395/512 and 385/512, ahead of answer-only OPSD at 366/512 and 367/512. Training uses one base model, 256 GSM8K questions, two seeds, and 64 updates per group.
+**Removing vocabulary-wise KL clipping improved 128-token numeric accuracy by 29.69 percentage points** on the 192-question project holdout. The question-paired 95% interval was **[23.70, 35.68] pp**, averaged over seeds 17 and 29. Each matched pair used the same 256 training questions, question order, rollout seed, 64 optimizer updates, answer-only teacher, and 128-token training cap. Online trajectories could diverge as the student weights changed.
 
-[Experimental report](后续实验报告.md) · [GSM8K metrics](results/budget-study/confirmation-metrics.csv) · [SVAMP metrics](results/budget-study/svamp-metrics.csv) · [Paired differences](results/budget-study/answer-delivery-paired.csv)
+| Method | 128-token correct / 192 | Early answers retained / 140 | Late answers accelerated / 41 | 512-token correct / 192 |
+| --- | ---: | ---: | ---: | ---: |
+| Frozen Qwen3-8B | 140 | 140 | 0 | 181 |
+| OPSD with 0.05 vocabulary-wise clipping | 94 / 105 | 94 / 103 | 0 / 2 | 181 / 181 |
+| **OPSD with full forward KL** | **157 / 156** | **138 / 138** | 18 / 17 | **182 / 182** |
+| Equation-chain SFT | 140 / 137 | 112 / 111 | **25 / 23** | 143 / 140 |
 
-![Numeric accuracy and answer extraction by output cap](results/budget-study/confirmation-budget-curves.png)
+Slashes separate seeds 17 and 29. All models use the same evaluation prompt. The 128- and 512-token scores come from the same generated trajectory. Early questions are correct at 128 tokens for the frozen base, and late questions are only correct at 512 tokens for that base. “Accelerated” means the student delivered a correct answer by the short cutoff. The proposed follow-up checks reasoning validity separately from answer timing.
 
-## Reproduce the comparison
+Full KL averaged **+8.59 pp [4.43, 13.28]** over the frozen base and **+9.38 pp [2.86, 15.89]** over the existing equation-chain SFT controls at 128 tokens. SFT accelerated more late questions, while full KL retained more early and long-budget successes. At 512 tokens the paired interval against the base includes zero.
 
-Use a Linux CUDA environment with Python 3.11 or 3.12 and CUDA-enabled PyTorch 2.8.
+On **SVAMP**, the two full-KL runs and the base each reached **236/256** at 128 tokens. The runs retained **233/236** and **234/236** of the original early answers and scored **237/256** and **238/256** at 512 tokens, compared with **238/256** for the base. Only two questions were late for the base under this protocol, so cross-source acceleration remains open.
 
-```bash
-python -m pip install transformers==4.57.1 peft==0.17.1 accelerate==1.11.0 safetensors==0.5.3
-python gsm8k.py prepare data
-python budget_study.py prepare data data/next-confirmation
-hf download Qwen/Qwen3-1.7B --revision 70d244cc86ccca08cf5af4e1e306ecf908b1ad5e --local-dir model
-python short_sft_baseline.py prepare data/train.jsonl data/equation-sft --target equations
+The 192 questions come from the original GSM8K training partition and were held out from project training and earlier model selection. The two seeds share those same questions. The controlled result identifies a cost of clipping in this 8B recipe. Its applicability to other model families and training schedules is open. [Experimental report](8B规模对照报告.md#第二种子算式-sft-与题源迁移) · [Paired scores](results/scale-transfer/privileged-gradient-audit/kl-pilot/paired-two-seed.json) · [Split manifest](results/scale-transfer/privileged-gradient-audit/kl-pilot/data-manifest.json)
 
-for seed in 17 29; do
-    python run_math.py opsd --model model --data data/train.jsonl --seed "$seed" \
-        --teacher-context answer --output "runs/train/answer$seed"
-    python run_math.py sft --model model --data data/equation-sft/train.jsonl --seed "$seed" \
-        --output "runs/train/equationsft$seed"
-done
+## Training and gradient audit
 
-for name in answer17 equationsft17 answer29 equationsft29; do
-    python run_math.py predict --model model --data data/next-confirmation/inputs.jsonl \
-        --adapter "runs/train/$name/adapter" --cap 512 --batch-size 16 --save-token-ids \
-        --output "runs/predict/$name"
-done
-python budget_study.py report model data/next-confirmation/labels.jsonl runs/score \
-    answer17=runs/predict/answer17/base.jsonl equationsft17=runs/predict/equationsft17/base.jsonl \
-    answer29=runs/predict/answer29/base.jsonl equationsft29=runs/predict/equationsft29/base.jsonl
-```
+- **Online rollouts and a shared frozen teacher.** Before each optimizer update, the current LoRA student generates a batch of trajectories. With its adapter disabled, the same base model scores the identical completion positions under a prompt that includes the known answer. Evaluation prompts withhold the reference answer. Full forward KL uses the entire vocabulary at each scored position. [Single-GPU implementation](run_math.py)
+- **Local EOS update direction.** At the end of 59 verified compact references, a local descent step on logits under vocabulary-wise clipping would decrease the EOS log-probability at **32/59** positions for frozen 8B and **2/59** for frozen 1.7B. The two existing 8B checkpoints gave **26/59** and **22/59**. Full KL raised it at all these reference endings. The analytic derivatives were checked with autograd. How much of the generation gap this mechanism accounts for remains open. [Audit code](audit_privileged_gradients.py) · [Position-level results](results/scale-transfer/privileged-gradient-audit)
+- **Numerical parity and checkpoint recovery.** On four cached, unpadded 1.7B trajectories with matched FP32 objective, attention inputs, and completion-logit scope, the maximum loss difference from the pinned upstream Trainer was **9.32 × 10⁻¹⁰**, with identical gradients and updates across **392 LoRA tensors**. In a separate deterministic upstream test with 32 examples and eight optimizer updates, recovery from update four reproduced all rollout hashes and adapter tensors. [Trainer parity and recovery](TRAINER_PARITY.md)
 
-The scorer decodes the 64-, 128-, 256- and 512-token prefixes under three extraction policies. For SVAMP, run `python prepare_svamp.py data/train.jsonl data/svamp`, generate from `data/svamp/inputs.jsonl` at `--cap 128`, and use `budget_study.py report` with the SVAMP labels and `--budgets 128`.
+## Recompute the published results
 
-### Shared numeric output field
-
-A follow-up uses one output contract for both models. Each model can draft up to 104 tokens, then fills the same grammar-constrained numeric field. The draft, delimiter and final field together fit within 128 tokens. Unfinished fields count as wrong.
-
-| Dataset | Answer-only teacher OPSD, seeds 17 / 29 | Equation-chain SFT, seeds 17 / 29 |
-| --- | ---: | ---: |
-| GSM8K confirmation | 259/512 · 248/512 | 196/512 · 198/512 |
-| SVAMP sample | 207/256 · 202/256 | 144/256 · 138/256 |
-
-OPSD retains a numeric-accuracy advantage under this contract. Equation-chain SFT still uses fewer tokens and completes more fields on GSM8K. The follow-up reuses the evaluated questions.
+The archives include predictions, scores, and the matched OPSD run configurations. The following Bash commands replay the published question-level statistics on CPU with Python and NumPy, from the repository root.
 
 ```bash
-for name in answer17 equationsft17 answer29 equationsft29; do
-    python structured_answer_budget.py --model model --data data/next-confirmation/inputs.jsonl         --adapter "runs/train/$name/adapter" --output "runs/structured/$name"
-done
-python score_structured_answer.py data/next-confirmation/labels.jsonl runs/structured runs/structured-score
+pilot=results/scale-transfer/privileged-gradient-audit/kl-pilot
+replay=$(mktemp -d)
+mkdir -p "$replay/seed17"
+
+tar -xzf "$pilot/seed29-evidence.tar.gz" -C "$replay"
+tar -xzf "$pilot/seed17-evidence.tar.gz" -C "$replay/seed17"
+tar -xzf "$pilot/controls-evidence.tar.gz" -C "$replay/seed17"
+PYTHONPATH=. python "$pilot/recompute-two-seed.py" "$replay"
+diff -u "$pilot/paired-two-seed.json" "$replay/paired-two-seed.json"
 ```
 
-[Structured GSM8K metrics](results/budget-study/structured-gsm8k-metrics.csv) · [Structured SVAMP metrics](results/budget-study/structured-svamp-metrics.csv)
+For a model rerun, use the archived `clipped/config.json` and `full/config.json`, the evaluation `protocol.json` files, and the [8B environment and training instructions](8B规模对照报告.md#复现). In the matched OPSD comparison, `--kl-clip 0.05` selects vocabulary-wise clipping and `--kl-clip none` selects full forward KL. The repository supplies the results archives and adapter checksums. Re-running inference with the original full-KL weights requires the separately stored LoRA adapters. [Evidence archives and checksums](results/scale-transfer/privileged-gradient-audit/kl-pilot)
 
-## Condition changes and teacher notes
+## Earlier studies
 
-The controlled evaluation contains 216 base problems and 792 question variants. It changes relevant conditions, adds irrelevant information, and tests changes in numerical values and quantifier scope. Results below use the shared 128-token answer protocol. A pair counts as correct when both questions are answered correctly.
-
-| Training method | Effective-condition pairs correct | Irrelevant-condition pairs correct |
-| --- | ---: | ---: |
-| Frozen Qwen3-1.7B | 160/216 | 187/216 |
-| Equation-chain SFT, two seeds | 121/216 · 119/216 | 116/216 · 114/216 |
-| Answer-only teacher OPSD | 168/216 · 167/216 | 187/216 · 187/216 |
-| General teacher notes | 154/216 · 140/216 | 181/216 · 152/216 |
-| Constraint-focused teacher notes | 74/216 · 143/216 | 126/216 · 188/216 |
-
-Answer-only OPSD outperforms equation-chain SFT on this test. Its gain relative to the frozen base is smaller, and the paired intervals include zero for both seeds. The two note policies use the same structured format and matched lengths. A frozen model generates the notes from the questions. Their students show lower effective-condition pair accuracy than the corresponding answer-only models at 128 tokens. One constraint-trained student reaches its draft cap on all 72 quantifier-scope variants.
-
-At 512 tokens the two constraint-trained students recover to **191/216** and **180/216** effective-condition pairs, with mean outputs of **139.5** and **93.4** tokens per question. The frozen model reaches 175/216 at 82.6 tokens. On 288 additional questions, the constraint-trained students also improve as the budget grows, while the relative ranking at 128 tokens varies by seed. The results characterize how teacher context changes answer delivery under a shared budget.
-
-![Effective-condition pair accuracy by generation cap and actual generated tokens](results/condition-study/budget-curves.png)
-
-[Condition-change metrics](results/condition-study/metrics.json) · [Experiment and reproduction](条件干预实验报告.md)
-
-### Answer allocation and trainer checks
-
-With total generation capped at 128 tokens, varying the answer reserve changes how much space the model has for its draft. For the weakest constraint checkpoint, the number of valid answer fields rises from **144/288** to **205/288** as the reserve grows from 16 to 48 tokens. Its effective-condition pair accuracy stays at **1/96** throughout. Another constraint checkpoint drops from **33/96** at a reserve of 24 to **16/96** at a reserve of 48.
-
-On four cached student trajectories, the native clipped objective and the pinned upstream objective agree to within **9.32×10⁻¹⁰**, with identical LoRA gradients. A separate test runs the upstream Trainer with Transformers generation and resumes after the first update. In deterministic mode, the resumed and uninterrupted runs produce identical rollouts and adapter tensors at both steps.
-
-[Answer allocation and Trainer results](results/condition-study/engineering-controls.json) · [Fixed-update and recovery checks](TRAINER_PARITY.md) · [Replication details](条件干预实验报告.md)
-
-### External transfer to MATH-500
-
-Under a shared boxed-answer prompt, answer-only OPSD scores **34/500 and 28/500** at 128 generated tokens, compared with **18/500** for frozen Qwen3-1.7B, **28/500 and 22/500** for full-solution OPSD, and **7/500** for each full-solution SFT seed. At 512 tokens, answer-only OPSD scores **263/500 and 262/500** against **253/500** for the frozen model. Both 512-token paired intervals against frozen include zero. The adapters were trained on GSM8K.
-
-[MATH-500 results and provenance](results/condition-study/engineering-followup.json)
-
-## Qwen3-8B scale comparison
-
-The 8B experiment uses the same 256 GSM8K training questions and 64 updates per group. The table shows numeric accuracy on the same 512 confirmation questions at a 128-token cap. The budget prompt names the token limit and asks the model to prioritize key steps.
-
-| Prompt | Frozen 8B | Answer-only OPSD, seeds 17 / 29 | Equation-chain SFT, seeds 17 / 29 |
-| --- | ---: | ---: | ---: |
-| Standard | 319/512 | 361/512 · 287/512 | 323/512 · 309/512 |
-| Explicit budget | 369/512 | 386/512 · 339/512 | 402/512 · 409/512 |
-
-The standard-prompt OPSD advantage observed at 1.7B appears in one of the two 8B seeds. Adding the budget instruction reduces the OPSD-minus-SFT gap by **10.55 and 9.38 percentage points**, with both paired intervals above zero. Equation-chain SFT also scores higher under the strict answer-line policy in both prompts and both seeds. The experiment measures the effect of the full budget instruction.
-
-[8B protocol and reproduction](8B规模对照报告.md) · [Complete 8B scorecard](results/scale-transfer/qwen3-8b.json)
-
-## Retention-aware self-distillation
-
-In a two-seed Qwen3-8B study, exact-zero handling and full forward KL on the unprivileged branch kept the no-op control token-identical to the frozen base. Behavior-based assignment recovered 371/551 and 374/551 short-budget answers on the reviewed GSM8K set. The matched random assignment reached 365/551 and 370/551. Both behavior-based runs reached 233/256 on a new SVAMP sample, compared with 236/256 for the frozen base. The results support retention relative to uniform privileged distillation and leave the incremental benefit of behavior-based assignment unestablished. [Study and optimizer audit](保留感知蒸馏报告.md) · [GSM8K scores](results/scale-transfer/retention-study/gsm8k-results.json) · [SVAMP scores](results/scale-transfer/retention-study/svamp-results.json)
-
-## Matched-budget reevaluation
-
-On 192 locked questions, both model sizes were reevaluated on the same GPU with four prompts and a shared numeric answer field. At capability-matched budgets of 128 tokens for 1.7B and 120 for 8B, the OPSD-minus-SFT gap was **15.48 percentage points larger at 1.7B** on the 126 questions both frozen bases solved at long budget. The common-prefix teacher probe found the same net gain of one correct continuation from masked equations at each scale. [Study](8B规模对照报告.md#两种规模的同协议复评) · [Evaluation artifacts](results/scale-transfer/crossed-budget-study)
-
-## Privileged KL ablation
-
-On a new 192-question project holdout, 8B answer-only OPSD with full forward KL scored **157/192 and 156/192** at 128 tokens, compared with **94/192 and 105/192** for vocabulary-wise clipping and **140/192** for the frozen base. The two full-KL runs retained **138/140** base-early answers each and finished **18/41 and 17/41** base-late answers within the short budget. At 512 tokens, both scored **182/192**, compared with **181/192** for the base. A paired gradient audit examines how clipping can reverse the local update direction for EOS. [Study](8B规模对照报告.md#特权蒸馏的梯度审计) · [Results and replay archives](results/scale-transfer/privileged-gradient-audit)
+| Study | What it established |
+| --- | --- |
+| [1.7B budgets and shared answer field](后续实验报告.md) | The 128-token numeric advantage of answer-only OPSD over equation-chain SFT persisted when both used the same grammar-constrained answer field. [Original reproduction commands](https://github.com/Yamila56/OPSDMath/blob/dfab64e036c221c5d04e683fab4b1e68a0a50b61/README.md#reproduce-the-comparison) |
+| [Condition changes and teacher notes](条件干预实验报告.md) | Measured paired response sensitivity and the effect of teacher context and answer reserve. [MATH-500 transfer](results/condition-study/engineering-followup.json) |
+| [8B scale and matched-budget reevaluation](8B规模对照报告.md#两种规模的同协议复评) | The relative 1.7B advantage narrowed under some prompts, with a residual gap under matched budget pressure in the earlier clipped recipe. |
+| [Retention-aware routing](保留感知蒸馏报告.md) | No-op anchoring kept output tokens identical to the frozen base. The additional gain from behavior-based assignment over matched random routing remained unestablished. |
 
 ## References
 
-The training objective follows [Self-Distilled Reasoner](https://proceedings.mlr.press/v306/zhao26be.html). This repo adapts the training loop to one GPU and provides the training targets, evaluation, and comparisons. Data comes from [GSM8K](https://github.com/openai/grade-school-math) and [SVAMP](https://aclanthology.org/2021.naacl-main.168/). The [initial reproduction](实验报告.md) records earlier runs on a separate 256-question evaluation set.
-
-The note comparison adapts the question-only brief generation studied in [B-OPSD](https://arxiv.org/abs/2611.19273). The template interventions follow the experimental approach of [GSM-Symbolic](https://arxiv.org/abs/2410.05229).
+The OPSD training setup follows [Self-Distilled Reasoner](https://proceedings.mlr.press/v306/zhao26be.html). Related preprints study [correction reversal under vocabulary-wise clipping](https://arxiv.org/abs/2609.38995) and [premature termination and repetition in OPSD](https://arxiv.org/abs/2611.19925). The main evaluation uses [GSM8K](https://github.com/openai/grade-school-math) and [SVAMP](https://aclanthology.org/2021.naacl-main.168/).
