@@ -4,18 +4,15 @@ The main comparison uses the frozen Qwen3-8B reference, two OPSD objectives and 
 
 The paired analysis resamples questions and reports seed-specific effects and the seed-averaged effect. At 128 tokens, full KL exceeded the frozen base by 8.59 pp and equation SFT by 9.38 pp. The paired 512-token comparison with the base includes zero. On SVAMP, all three of the base and two full-KL runs scored 236/256 at 128 tokens. The full-KL runs retained 233 and 234 of the 236 original early answers. The SVAMP base has two late questions under this protocol.
 
-The local logit audit found that clipping would lower EOS log-probability at 32/59 reference endings for frozen 8B, compared with 2/59 for frozen 1.7B. The two 8B adapters gave 26/59 and 22/59. Full KL gave zero such endings in these groups. The audit measures a local derivative. The share of the generation gap attributable to EOS remains open. [Gradient and prediction archives](../results/scale-transfer/privileged-gradient-audit) · [Paired results and checksums](../results/scale-transfer/privileged-gradient-audit/kl-pilot)
+The local logit audit found that clipping would lower EOS log-probability at 32/59 reference endings for frozen 8B, compared with 2/59 for frozen 1.7B. The two 8B adapters gave 26/59 and 22/59. Full KL gave zero such endings in these groups. The audit measures a local derivative. The share of the generation gap attributable to EOS remains open. [Gradient and prediction archives](../results/gradient_audit) · [Paired results and checksums](../results/kl_ablation)
 
-Earlier prompt, answer-format and matched-routing studies are available with their [result directories](../results) and [study runners](../experiments). [Upstream parity and interrupted-run recovery evidence](trainer_parity.md)
+## Formal studies
 
-The executable studies are organized by research question.
+| Study | Code | Evidence |
+| --- | --- | --- |
+| Matched objective ablation and equation SFT control | [kl_ablation](../experiments/kl_ablation) | [Paired statistics and SHA-256-verified prediction bundles](../results/kl_ablation) |
+| Cross-scale EOS direction and logit gradients | [gradient_audit](../experiments/gradient_audit) | [Per-position records](../results/gradient_audit) |
+| SVAMP transfer under the same token budgets | [transfer_evaluation](../experiments/transfer_evaluation) | [Accuracy and retention](../results/transfer_evaluation/summary.json) |
+| Upstream parity and interrupted-run recovery | [trainer_validation](../experiments/trainer_validation) | [Audit results](../results/trainer_validation) |
 
-| Study | Runner directory |
-| --- | --- |
-| Vocabulary-wise clipping, EOS and privileged gradient audits | [gradient_audit](../experiments/gradient_audit) |
-| Upstream numerical parity and interrupted-run recovery | [trainer_parity](../experiments/trainer_parity) |
-| Token budgets, scale transfer and structured scoring | [budget_efficiency](../experiments/budget_efficiency) |
-| Teacher context, continuation and prompt diagnostics | [teacher_context](../experiments/teacher_context) |
-| Equation and full-solution SFT controls | [sft_baselines](../experiments/sft_baselines) |
-| Matched routing and retention | [retention](../experiments/retention) |
-| Environment setup, launchers and historical figure generation | [support](../experiments/support) |
+The [supplementary studies](supplementary.md) document related experiments and link to their source and evidence.

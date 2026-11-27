@@ -24,8 +24,8 @@ An expanded run uses 32 GSM8K examples, four microsteps per update, eight optimi
 Run the checks from the checkout root with the pinned upstream environment. The fixed-update test consumes its starting adapter and matching token-ID trajectories. For the recovery test, run once to save the midpoint checkpoint, again with `--resume` in the same directory, then with `--uninterrupted` and a separate output directory.
 
 ```bash
-python -m experiments.trainer_parity.check_trainer_update --help
-python -m experiments.trainer_parity.smoke_upstream_trainer --help
+python -m experiments.trainer_validation.check_trainer_update --help
+python -m experiments.trainer_validation.smoke_upstream_trainer --help
 ```
 
-[Fixed-update implementation](../experiments/trainer_parity/check_trainer_update.py) · [Online recovery script](../experiments/trainer_parity/smoke_upstream_trainer.py) · [Numerical results](../results/condition-study/engineering-followup.json)
+[Fixed-update implementation](../experiments/trainer_validation/check_trainer_update.py) · [Online recovery script](../experiments/trainer_validation/smoke_upstream_trainer.py) · [Numerical results](../results/trainer_validation/engineering-followup.json)

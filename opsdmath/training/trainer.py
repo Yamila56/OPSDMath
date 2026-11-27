@@ -8,36 +8,19 @@ import time
 from pathlib import Path
 
 import torch
-import torch.nn.functional as F
 
 from opsdmath.evaluation.answer_parser import audit_final_answer, number
 from opsdmath.io import read_rows, write_rows
 
-from opsdmath.objectives.kl import DEFAULT_KL_CLIP, ROLLOUT_TEMPERATURE, check_loss, distillation_loss
+from opsdmath.evaluation.prediction import predict
+from opsdmath.objectives.kl import check_loss
 from opsdmath.training.arguments import trainer_parser, training_rows
 from opsdmath.training.checkpoint import save_state, training_identity, validate_resume
 from opsdmath.training.modeling import load_model, load_tokenizer, lora_config
-from opsdmath.training.prompts import BRIEF_CONTEXTS, EQUATIONS, INSTRUCTION, prompt, teacher_context
-from opsdmath.training.rollout import batch_suffixes, completion_logits, fixed_teacher_logits, rollout
-
-
-def synchronize(device):
-    if device.type == "cuda":
-        torch.cuda.synchronize(device)
-
-
-def log(event, output):
-    row = json.dumps(event, ensure_ascii=False)
-    with (output / "events.jsonl").open("a", encoding="utf-8") as stream:
-        stream.write(row + "\n")
-    print(row, flush=True)
-
-
-def memory(device):
-    return {
-        "peak_allocated_mib": round(torch.cuda.max_memory_allocated(device) / 2**20, 1),
-        "peak_reserved_mib": round(torch.cuda.max_memory_reserved(device) / 2**20, 1),
-    } if device.type == "cuda" else {}
+from opsdmath.training.losses import sft_loss, opsd_loss
+from opsdmath.training.prompts import BRIEF_CONTEXTS, prompt, teacher_context
+from opsdmath.training.rollout import batch_suffixes, completion_logits, fixed_teacher_logits
+from opsdmath.training.runtime import log, memory, synchronize
 
 
 def check_prompts(tokenizer, row, output, context):
@@ -157,16 +140,14 @@ def train(args, model, tokenizer, rows, device):
         logits = completion_logits(model, ids, suffix)
         diagnostic = {}
         if args.mode == "opsd":
-            clip = None if args.unclipped_anchor and context == "none" else args.kl_clip
-            loss = distillation_loss(logits, teacher, diagnostics=diagnostic if args.probe or args.log_diagnostics else None,
-                                     kl_clip=clip)
+            loss = opsd_loss(logits, teacher, args, context, diagnostic)
             if args.log_diagnostics:
                 parsed = audit_final_answer(tokenizer.decode(suffix_ids, skip_special_tokens=True))
                 diagnostic.update(hit_cap=hit_cap, parsed=parsed is not None,
                                   correct=parsed is not None and parsed == number(row["answer"]))
             del teacher
         else:
-            loss = F.cross_entropy(logits.flatten(0, 1).float(), suffix.flatten())
+            loss = sft_loss(logits, suffix)
         if not loss.isfinite():
             raise RuntimeError(f"Nonfinite loss on {row['id']}")
         group_start = index // args.accumulation * args.accumulation
@@ -205,34 +186,6 @@ def train(args, model, tokenizer, rows, device):
             save_state(args.output, adapter, identity, index+1, step, optimizer, scheduler, device)
             log(dict(event="checkpoint", update=step, path=adapter), args.output)
     model.save_pretrained(args.output / "adapter")
-
-
-def predict(args, model, tokenizer, rows, device):
-    if args.adapter:
-        from peft import PeftModel
-
-        model = PeftModel.from_pretrained(model, args.adapter)
-    predictions = []
-    for index in range(0, len(rows), args.batch_size):
-        batch = rows[index:index + args.batch_size]
-        start = time.perf_counter()
-        suffixes = batch_suffixes(
-            model, tokenizer, [prompt(tokenizer, row, thinking=args.student_thinking) for row in batch],
-            args.cap, False, device,
-        )
-        token_counts = []
-        for row, (suffix, hit_cap) in zip(batch, suffixes, strict=True):
-            token_counts.append(len(suffix))
-            prediction = {
-                "id": row["id"], "response": tokenizer.decode(suffix, skip_special_tokens=True),
-                "generated_tokens": len(suffix), "hit_cap": hit_cap,
-            }
-            if args.save_token_ids:
-                prediction["token_ids"] = suffix
-            predictions.append(prediction)
-        log({"event": "prediction_batch", "count": len(batch), "tokens": sum(token_counts),
-             "seconds": time.perf_counter() - start, **memory(device)}, args.output)
-    write_rows(args.output / f"{args.prediction_name}.jsonl", predictions)
 
 
 def main(argv=None):

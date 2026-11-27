@@ -30,3 +30,11 @@ def load_model(path, tokenizer, device):
     )
     model.generation_config.pad_token_id = tokenizer.pad_token_id
     return model
+
+
+def load_eval_model(path):
+    import torch
+
+    tokenizer = load_tokenizer(path)
+    model = load_model(path, tokenizer, torch.device("cuda:0"))
+    return model.eval(), tokenizer

@@ -11,8 +11,9 @@ from statistics import mean
 
 from opsdmath.analysis.gradients import gradients, unit_cos
 from opsdmath.data.gsm8k import number, read_rows, write_rows
-from experiments.budget_efficiency.opsd_calibration import load_model, write
-from experiments.sft_baselines.short_sft_baseline import EQUATIONS
+from opsdmath.training.modeling import load_eval_model as load_model
+from opsdmath.io import write_json as write
+from opsdmath.training.prompts import EQUATIONS
 
 OPS = {ast.Add: operator.add, ast.Sub: operator.sub, ast.Mult: operator.mul, ast.Div: operator.truediv}
 
@@ -52,7 +53,9 @@ def compact_reference(row):
 def audit(args):
     import torch
 
-    from opsdmath.training.trainer import DEFAULT_KL_CLIP, ROLLOUT_TEMPERATURE, batch_suffixes, completion_logits, distillation_loss, prompt
+    from opsdmath.objectives.kl import DEFAULT_KL_CLIP, ROLLOUT_TEMPERATURE, distillation_loss
+    from opsdmath.training.prompts import prompt
+    from opsdmath.training.rollout import batch_suffixes, completion_logits
 
     check_student = torch.tensor([[0., 1., 2., 3.]], requires_grad=True)
     check_teacher = torch.tensor([[3., 0., 2., 1.]])

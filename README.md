@@ -1,22 +1,22 @@
 # OPSDMath
 
-**Gradient Analysis and Budget-Efficient On-Policy Self-Distillation**
+**Analyzing KL Clipping in On-Policy Self-Distillation for Budgeted Mathematical Reasoning**
 
-How does on-policy self-distillation change which math problems a model can solve within a fixed token budget? OPSDMath studies this question with Qwen3-1.7B and Qwen3-8B. It combines single-GPU LoRA training, a logit-level analysis of vocabulary-wise KL clipping, and paired evaluations that track which answers arrive earlier and which previously correct answers are lost.
+## Overview
 
-## Research highlights
-
-- **Single-GPU on-policy distillation.** The student generates fresh trajectories during training. The frozen teacher reuses the Qwen3 weights with the student adapter disabled. Completion-only logits limit the output positions carried through the training computation.
-- **Gradient diagnostics across model scales.** The project derives the clipped and unclipped logit gradients, verifies the analytic result with autograd, and audits their local effect on end-of-sequence probability on shared reference endings.
-- **Accuracy under a short generation budget.** A matched 8B objective ablation measures short-budget accuracy, preservation of early correct answers, and the number of problems answered earlier than by the frozen base.
-
-## On-policy training architecture
+How does clipping individual vocabulary terms in on-policy self-distillation affect which problems a language model solves under a fixed token budget? OPSDMath studies this question with Qwen3-1.7B and Qwen3-8B using single-GPU LoRA training, analytical gradient checks, and paired short- and long-budget evaluations.
 
 ![An online LoRA student and an adapter-disabled teacher scoring the same sampled prefixes](assets/figures/overview.svg)
 
-The student sees the question and samples trajectories before each optimizer update. The teacher receives the reference answer and scores the same sampled prefixes. The objective compares the teacher and student distributions across the full vocabulary at each completion position. The optimizer updates only the student's LoRA parameters. In the matched 8B ablation, both arms use 256 training questions, 64 updates and a 128-token rollout cap. The intervention is a per-vocabulary-term cap of 0.05 in the forward KL objective. [Method](docs/method.md) · [Trainer](opsdmath/training/trainer.py) · [Reference configurations](configs)
+## Key findings
 
-## Gradient mechanism
+- **Short-budget accuracy.** Full forward KL reached **81.51% at 128 tokens** on 192 project-held-out GSM8K questions across two 8B training seeds. This is **+29.69 percentage points** over clipped OPSD and **+8.59** over the frozen model.
+- **Retention.** Both full-KL runs retained **138 of 140 (98.57%)** early correct answers. Mean accuracy reached **94.79% at 512 tokens**, and the paired interval for the gain at that budget includes zero.
+- **Local EOS gradient.** Clipping would lower EOS log-probability on **32/59** reference endings for frozen 8B and **2/59** for frozen 1.7B. The audit measures a local change in logit space. The link to generation after training remains open.
+
+## Method
+
+The student sees the question and samples trajectories before each optimizer update. The teacher receives the reference answer and scores the same sampled prefixes. The objective compares the teacher and student distributions across the full vocabulary at each completion position. The optimizer updates only the student's LoRA parameters. In the matched 8B ablation, both arms use 256 training questions, 64 updates and a 128-token rollout cap. The intervention is a per-vocabulary-term cap of 0.05 in the forward KL objective. [Method](docs/method.md) · [Trainer](opsdmath/training/trainer.py) · [Reference configurations](configs)
 
 ![Illustrative vocabulary contributions under full and clipped KL, with measured EOS audit counts](assets/figures/mechanism.svg)
 
@@ -30,11 +30,11 @@ In the reference-ending audit at temperature 1.1, a local logit descent step und
 | Adapter, seed 17 | 2/59 | 26/59 |
 | Adapter, seed 29 | 1/59 | 22/59 |
 
-Full forward KL had zero such decreases in each group. The audit measures a local change in EOS log-probability in logit space. Its contribution to generation after model parameter updates remains open. [Analytic gradients](opsdmath/analysis/gradients.py) · [EOS audit data](results/scale-transfer/privileged-gradient-audit/eos-paired.json)
+Full forward KL had zero such decreases in each group. The audit measures a local change in EOS log-probability in logit space. Its contribution to generation after model parameter updates remains open. [Analytic gradients](opsdmath/analysis/gradients.py) · [EOS audit data](results/gradient_audit/eos-paired.json)
 
-## Main results
+## Experimental results
 
-Full forward KL averaged **81.51% at 128 tokens** and **94.79% at 512 tokens** across seeds 17 and 29. At 128 tokens it improved accuracy by **29.69 percentage points** over clipped OPSD (question-paired 95% CI [23.70, 35.68]) and by **8.59 percentage points** over frozen Qwen3-8B (95% CI [4.43, 13.28]). It retained **98.57%** of the frozen model's early correct answers in each run.
+At 128 tokens the question-paired 95% confidence interval was [23.70, 35.68] percentage points for full KL versus clipped OPSD and [4.43, 13.28] for full KL versus the frozen base.
 
 | Method | 128-token correct / 192 | Early retained / 140 | Late accelerated / 41 | 512-token correct / 192 |
 | --- | ---: | ---: | ---: | ---: |
@@ -43,37 +43,36 @@ Full forward KL averaged **81.51% at 128 tokens** and **94.79% at 512 tokens** a
 | **Full forward KL** | **157 / 156** | **138 / 138** | 18 / 17 | **182 / 182** |
 | Equation-chain SFT | 140 / 137 | 112 / 111 | **25 / 23** | 143 / 140 |
 
-All methods use the same **192 project-held-out questions from the GSM8K training partition**, with both budgets scored on the same trajectory. Slashes separate seeds 17 and 29. Early retention counts questions the base solves by 128 tokens. Late acceleration counts questions the base solves only at 512 tokens that the adapted model answers by 128. Equation-chain SFT accelerated more late answers. Full KL retained more early answers, and its paired difference from the base at 512 tokens includes zero. [Experiment protocol](docs/experiments.md) · [Paired statistics](results/scale-transfer/privileged-gradient-audit/kl-pilot/paired-two-seed.json)
+All methods use the same **192 project-held-out questions from the GSM8K training partition**, with both budgets scored on the same trajectory. Slashes separate seeds 17 and 29. Early retention counts questions the base solves by 128 tokens. Late acceleration counts questions the base solves only at 512 tokens that the adapted model answers by 128. Equation-chain SFT accelerated more late answers. Full KL retained more early answers, and its paired difference from the base at 512 tokens includes zero. [Experiment protocol](docs/experiments.md) · [Paired statistics](results/kl_ablation/paired-two-seed.json)
 
 ![Short- and long-budget accuracy, late-answer acceleration versus early retention, and paired effects](assets/figures/main_results.svg)
 
-On **SVAMP**, the frozen base and both full-KL runs scored **236/256 at 128 tokens**. The two runs retained **233/236** and **234/236** of the base's early answers. At 512 tokens they scored **237/256** and **238/256**, versus **238/256** for the base. The base had only two late questions under this protocol, so this transfer check primarily informs retention. [SVAMP paired statistics](results/scale-transfer/privileged-gradient-audit/kl-pilot/paired-two-seed.json)
+On **SVAMP**, the frozen base and both full-KL runs scored **236/256 at 128 tokens**. The two runs retained **233/236** and **234/236** of the base's early answers. At 512 tokens they scored **237/256** and **238/256**, versus **238/256** for the base. The base had only two late questions under this protocol, so this transfer check primarily informs retention. [SVAMP replay and retention counts](results/transfer_evaluation/summary.json)
 
-## Training verification
+## Quick start
 
-- **Trainer parity.** One fixed Qwen3-1.7B AdamW update used four identical unpadded cached trajectories, identical starting weights and gradient clipping, and matched FP32 loss arithmetic, forward inputs, and completion-only logits. The maximum loss discrepancy from the pinned upstream Trainer was **9.32 × 10⁻¹⁰**. Gradients and resulting updates matched exactly across **392 LoRA parameter tensors**.
-- **Interrupted-run recovery.** In a separate deterministic upstream Trainer run with Transformers generation, resuming at update four of eight reproduced all **32 prompt and rollout hashes** and all **392 LoRA tensors** at the compared checkpoints. [Parity and recovery protocol](docs/trainer_parity.md)
-
-## Additional experiments
-
-Earlier studies compared Qwen3-1.7B budget curves and shared grammar-constrained answer fields, varied teacher context and answer reserves under controlled changes to math questions, and reevaluated the two model scales under matched budget pressure. Retention experiments verified a token-identical no-op anchor against the frozen model. Behavior-based assignment had no established advantage over matched random routing in those runs. [Budget study](results/budget-study) · [Teacher-context and answer-format studies](results/condition-study) · [Cross-scale reevaluation](results/scale-transfer/crossed-budget-study) · [Retention experiments](results/scale-transfer/retention-study)
-
-## Installation and quick start
-
-Use Python 3.12 from a checkout of this repository.
+From a checkout, use Python 3.12 or later.
 
 ```bash
 python -m pip install -e .
 opsdmath-reproduce --experiment kl-ablation
 ```
 
-This CPU command verifies the prediction archive hashes and recomputes the full paired GSM8K and SVAMP report.
+CPU replay verifies the saved archive hashes and recomputes the GSM8K paired results, SVAMP scores and retention, and EOS direction counts. CUDA training and inference use the pinned model revision, data split, and [configurations](configs). The guide covers training the adapters locally and verifying any original copies available to you. [Reproduction guide](docs/reproduction.md)
 
-## Reproduction
+## Repository structure
 
-With CUDA-enabled PyTorch, install `.[training]` for config-driven training and inference. `opsdmath-train` takes a selected recipe and seed, a local model, and the prepared training split. `opsdmath-evaluate` scores the locked short and long budgets for named checkpoints. The guide records the model revision, dataset preparation, adapter checksums and exact commands. [Reproduction guide](docs/reproduction.md) · [Archived predictions and configurations](results/scale-transfer/privileged-gradient-audit/kl-pilot)
+| Directory | Contents |
+| --- | --- |
+| [opsdmath](opsdmath) | Objectives, single-GPU training, inference, and paired statistics |
+| [configs](configs) | Matched training recipes and reference evaluation protocol |
+| [experiments](experiments) and [results](results) | KL ablation, gradient audit, SVAMP transfer, and Trainer validation |
+| [scripts](scripts) and [assets](assets) | Data preparation, reproduction, and figures |
+| [archive](archive) | Earlier budget, teacher-context, and retention studies with their original evidence |
 
-The [study index](docs/experiments.md) links the gradient audits, trainer checks, budget studies, teacher-context probes, SFT controls, and retention experiments to their runners.
+## Supplementary studies
+
+The fixed-update audit matched gradients and updates across **392 LoRA parameter tensors** after matching the loss arithmetic and forward inputs. In a separate upstream Trainer audit, interrupting at update four of eight reproduced all **32 prompt and rollout hashes** and the compared adapter tensors. Earlier studies cover structured answers, matched budget pressure across scales, teacher context, and retention routing. [Trainer validation](docs/trainer_parity.md) · [Supplementary studies](docs/supplementary.md)
 
 ## References
 

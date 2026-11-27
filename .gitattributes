@@ -3,6 +3,6 @@
 *.jsonl text eol=lf
 
 # These frozen evaluation inputs are byte-verified against the original run.
-/results/scale-transfer/crossed-budget-study/data/*.jsonl -text !eol
-/results/scale-transfer/crossed-budget-study/teacher-shared/common-late.jsonl -text !eol
-/results/scale-transfer/retention-study/teacher-continuation/development-pool.jsonl -text !eol
+/archive/results/crossed_budget/data/*.jsonl -text !eol
+/archive/results/crossed_budget/teacher-shared/common-late.jsonl -text !eol
+/archive/results/retention/teacher-continuation/development-pool.jsonl -text !eol

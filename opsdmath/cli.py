@@ -3,16 +3,14 @@
 import argparse
 import hashlib
 import json
-import tarfile
-import tempfile
 from pathlib import Path
 
 
 def verified_file(path, expected):
     """Reject changed inputs before a reference run starts."""
-    with path.open("rb") as stream:
-        actual = hashlib.file_digest(stream, "sha256").hexdigest()
-    if actual != expected:
+    from opsdmath.io import digest
+
+    if digest(path) != expected:
         raise ValueError(f"SHA-256 mismatch for {path}")
 
 
@@ -58,6 +56,12 @@ def evaluate():
     parser.add_argument("--group", nargs="+", required=True, help="Use NAME or NAME=ADAPTER_DIR.")
     args = parser.parse_args()
     cfg = load_config(args.config)
+    from opsdmath.evaluation.inference import evaluate as run, validate_recipe
+
+    try:
+        validate_recipe(cfg)
+    except ValueError as error:
+        parser.error(str(error))
     for spec in args.group:
         name = spec.partition("=")[0]
         if not name or Path(name).name != name or name in (".", ".."):
@@ -69,40 +73,11 @@ def evaluate():
         verified_file(args.data / f"{name}.jsonl", cfg[f"{name}_sha256"])
     args.batch_size = cfg["batch_size"]
 
-    from opsdmath.evaluation.combined import evaluate as run
+    run(args, expected_questions=cfg["questions"])
 
-    run(args)
 
 
 def reproduce():
-    parser = argparse.ArgumentParser(description="Recompute and verify the published KL ablation.")
-    parser.add_argument("--experiment", choices=["kl-ablation"], default="kl-ablation")
-    parser.add_argument("--repository", type=Path, default=Path.cwd())
-    parser.add_argument("--output", type=Path)
-    args = parser.parse_args()
+    from experiments.kl_ablation.replay import main
 
-    from opsdmath.analysis.kl_replay import recompute
-
-    pilot = args.repository / "results/scale-transfer/privileged-gradient-audit/kl-pilot"
-    checksums = {}
-    for line in (pilot / "archive-sha256.txt").read_text(encoding="utf-8").splitlines():
-        digest, filename = line.split()
-        checksums[filename] = digest
-    with tempfile.TemporaryDirectory(prefix="opsdmath-") as directory:
-        root = Path(directory)
-        for filename, target in (("seed29", root), ("seed17", root / "seed17"), ("controls", root / "seed17")):
-            path = pilot / f"{filename}-evidence.tar.gz"
-            verified_file(path, checksums[path.name])
-            with tarfile.open(path) as archive:
-                archive.extractall(target, filter="data")
-        recompute(root)
-        report = root / "paired-two-seed.json"
-        data = load_config(report)
-        if data != load_config(pilot / report.name):
-            raise ValueError("Replayed statistics differ from the published statistics")
-        if args.output:
-            with args.output.open("x", encoding="utf-8") as stream:
-                stream.write(report.read_text(encoding="utf-8"))
-    print("Matched the archived two-seed KL ablation and SVAMP statistics.")
-    print("128-token counts:", data["128/numeric/all"]["counts"])
-    print("512-token counts:", data["512/numeric/all"]["counts"])
+    main()
