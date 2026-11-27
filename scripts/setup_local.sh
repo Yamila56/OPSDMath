@@ -29,6 +29,7 @@ python="${PYTHON:-python3}"
 if [[ ! -f "$venv/pyvenv.cfg" ]]; then
     "$python" -m venv "$venv"
 fi
+venv=$(cd -- "$venv" && pwd)
 if [[ -x "$venv/Scripts/python.exe" ]]; then
     runtime="$venv/Scripts/python.exe"
 else
@@ -37,5 +38,5 @@ fi
 "$runtime" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 12) else "Choose a new virtual environment for Python 3.12+")'
 # Pin the build flavor even when an environment already has torch 2.8.0.
 "$runtime" -m pip install "torch==2.8.0+$wheel_index" --index-url "https://download.pytorch.org/whl/$wheel_index"
-"$runtime" -m pip install -e "$repo[$extras]"
+(cd -- "$repo" && "$runtime" -m pip install -e ".[$extras]")
 printf 'OPSDMath %s environment ready. Python: %s\n' "$mode" "$runtime"
