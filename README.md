@@ -10,40 +10,34 @@ How does clipping individual vocabulary terms in on-policy self-distillation aff
 
 ## Key findings
 
-- **Short-budget accuracy.** Full forward KL reached **81.51% at 128 tokens** on 192 project-held-out GSM8K questions across two 8B training seeds. This is **+29.69 percentage points** over clipped OPSD and **+8.59** over the frozen model.
-- **Retention.** Both full-KL runs retained **138 of 140 (98.57%)** early correct answers. Mean accuracy reached **94.79% at 512 tokens**, and the paired interval for the gain at that budget includes zero.
-- **Local EOS gradient.** Clipping would lower EOS log-probability on **32/59** reference endings for frozen 8B and **2/59** for frozen 1.7B. The audit measures a local change in logit space. The link to generation after training remains open.
+| Short-budget gain | Early retention | EOS direction audit | Long-budget accuracy |
+| --- | --- | --- | --- |
+| **+29.69 pp** over clipped OPSD at 128 tokens | **98.57%** with full forward KL | **32/59** frozen 8B reference endings with a local decrease under clipping | **94.79%** with full forward KL at 512 tokens |
+
+Matched Qwen3-8B objective ablation across two training seeds. EOS counts come from the separate gradient audit.
 
 ## Method
 
-The student sees the question and samples trajectories before each optimizer update. The teacher receives the reference answer and scores the same sampled prefixes. The objective compares the teacher and student distributions across the full vocabulary at each completion position. The optimizer updates only the student's LoRA parameters. In the matched 8B ablation, both arms use 256 training questions, 64 updates and a 128-token rollout cap. The intervention is a per-vocabulary-term cap of 0.05 in the forward KL objective. [Method](docs/method.md) · [Trainer](opsdmath/training/trainer.py) · [Reference configurations](configs)
+The student sees the question and samples trajectories before each optimizer update. The teacher receives the reference answer and scores the same sampled prefixes. The objective compares the teacher and student distributions across the full vocabulary at each completion position. The optimizer updates only the student's LoRA parameters. In the matched 8B ablation, both arms use 256 training questions, 64 updates and a 128-token rollout cap. The intervention is a per-vocabulary-term cap of 0.05 in the forward KL objective. [Method](docs/method.md) · [Reference configurations](configs)
 
 ![Illustrative vocabulary contributions under full and clipped KL, with measured EOS audit counts](assets/figures/mechanism.svg)
 
 For teacher probabilities $q$ and student probabilities $p$, one forward KL contribution is $q_i\log(q_i/p_i)$. Capping individual contributions removes the derivative of the capped terms, while softmax normalization still couples the student logits. The analytic derivatives were checked against autograd. The contribution plots illustrate the objective. The EOS panel uses measured audit counts.
 
-In the reference-ending audit at temperature 1.1, a local logit descent step under clipped KL would **decrease EOS log-probability** in the following cases.
-
-| Checkpoint | Qwen3-1.7B | Qwen3-8B |
-| --- | ---: | ---: |
-| Frozen base | 2/59 | 32/59 |
-| Adapter, seed 17 | 2/59 | 26/59 |
-| Adapter, seed 29 | 1/59 | 22/59 |
-
-Full forward KL had zero such decreases in each group. The audit measures a local change in EOS log-probability in logit space. Its contribution to generation after model parameter updates remains open. [Analytic gradients](opsdmath/analysis/gradients.py) · [EOS audit data](results/gradient_audit/eos-paired.json)
+At temperature 1.1, clipping would locally lower EOS log-probability on 32 of 59 reference endings for frozen Qwen3-8B and 2 of 59 for frozen Qwen3-1.7B. Full forward KL had zero decreases across the six audited checkpoints. The local logit derivative leaves the effect on generation after training unresolved. [Per-checkpoint audit](docs/experiments.md#cross-scale-eos-audit)
 
 ## Experimental results
 
 At 128 tokens the question-paired 95% confidence interval was [23.70, 35.68] percentage points for full KL versus clipped OPSD and [4.43, 13.28] for full KL versus the frozen base.
 
-| Method | 128-token correct / 192 | Early retained / 140 | Late accelerated / 41 | 512-token correct / 192 |
+| Method | Acc@128 | Acc@512 | Early retention | Late acceleration |
 | --- | ---: | ---: | ---: | ---: |
-| Frozen Qwen3-8B | 140 | 140 | 0 | 181 |
-| Clipped OPSD | 94 / 105 | 94 / 103 | 0 / 2 | 181 / 181 |
-| **Full forward KL** | **157 / 156** | **138 / 138** | 18 / 17 | **182 / 182** |
-| Equation-chain SFT | 140 / 137 | 112 / 111 | **25 / 23** | 143 / 140 |
+| Frozen Qwen3-8B | 72.92% | 94.27% | 100.00% | 0.00% |
+| Clipped OPSD | 51.82% | 94.27% | 70.36% | 2.44% |
+| **Full forward KL** | **81.51%** | **94.79%** | **98.57%** | 42.68% |
+| Equation-chain SFT | 72.14% | 73.70% | 79.64% | **58.54%** |
 
-All methods use the same **192 project-held-out questions from the GSM8K training partition**, with both budgets scored on the same trajectory. Slashes separate seeds 17 and 29. Early retention counts questions the base solves by 128 tokens. Late acceleration counts questions the base solves only at 512 tokens that the adapted model answers by 128. Equation-chain SFT accelerated more late answers. Full KL retained more early answers, and its paired difference from the base at 512 tokens includes zero. [Experiment protocol](docs/experiments.md) · [Paired statistics](results/kl_ablation/paired-two-seed.json)
+Accuracy is averaged across seeds 17 and 29 on the same **192 project-held-out questions from the GSM8K training partition**. Both budgets are scored on the same trajectory. Early retention is measured on the 140 questions the base answers by 128 tokens. Late acceleration uses the 41 questions the base answers only at 512 tokens. Full KL gains 8.59 points over the base at 128 tokens, and the paired interval against the base at 512 tokens includes zero. [Per-seed counts and protocol](docs/experiments.md) · [Paired statistics](results/kl_ablation/paired-two-seed.json)
 
 ![Short- and long-budget accuracy, late-answer acceleration versus early retention, and paired effects](assets/figures/main_results.svg)
 
@@ -69,6 +63,16 @@ CPU replay verifies the saved archive hashes and recomputes the GSM8K paired res
 | [experiments](experiments) and [results](results) | KL ablation, gradient audit, SVAMP transfer, and Trainer validation |
 | [scripts](scripts) and [assets](assets) | Data preparation, reproduction, and figures |
 | [archive](archive) | Earlier budget, teacher-context, and retention studies with their original evidence |
+
+## Key implementations
+
+| Component | Source |
+| --- | --- |
+| Single-GPU on-policy training loop | [trainer.py](opsdmath/training/trainer.py) |
+| Clipped and full forward KL | [kl.py](opsdmath/objectives/kl.py) |
+| Analytic logit gradients | [gradients.py](opsdmath/analysis/gradients.py) |
+| Student rollouts and frozen teacher scoring | [rollout.py](opsdmath/training/rollout.py) |
+| Paired statistical evaluation | [paired_statistics.py](opsdmath/analysis/paired_statistics.py) |
 
 ## Supplementary studies
 

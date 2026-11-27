@@ -1,0 +1,15 @@
+{
+  "base_model": "Qwen/Qwen3-8B",
+  "model_revision": "b968826d9c46dd6066d109eabc6255188de91218",
+  "model_index_sha256": "f9fdbcb91c23971c13ec5d5f2573d2349e8f61f2f049371ec699281748fdb1bc",
+  "dataset_revision": "78e727689e1c1bebfc4be39c446898e8e10b0518",
+  "inputs_sha256": "17561fb88c07251ec94ecf50fd120e7767faffb09dc0d0fa5973e445a318a89e",
+  "labels_sha256": "90665c77d0693e52c39730432f4bdcb9adba6836ab161ad5c0ce9f599de24415",
+  "questions": 256,
+  "batch_size": 64,
+  "short": 128,
+  "long": 512,
+  "prompt": "combined-128",
+  "thinking": false,
+  "default_output": "runs/svamp-transfer"
+}

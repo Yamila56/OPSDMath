@@ -1,9 +1,8 @@
 """Analytic logit derivatives for the gradient audit."""
 
 
-
-
 def gradients(student, teacher, temperature, clip):
+    """Return gradients with respect to student logits, with p for student and q for teacher."""
     p_log = (student.float() / temperature).log_softmax(-1)
     q_log = (teacher.float() / temperature).log_softmax(-1)
     p, q = p_log.exp(), q_log.exp()

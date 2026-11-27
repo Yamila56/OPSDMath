@@ -11,6 +11,8 @@ from opsdmath.training.modeling import load_eval_model
 
 PROMPT = "combined-128"
 THINKING = False
+ARTIFACTS = ("protocol.json", "tokens.jsonl", f"score-{SHORT}.json", f"score-{LONG}.json", "complete.json")
+CHECKSUMS = "artifacts-sha256.json"
 
 
 def validate_recipe(config):
@@ -22,17 +24,23 @@ def validate_recipe(config):
         if type(config.get(key)) is not int or config[key] < 1:
             raise ValueError(f"Evaluation recipe {key} must be a positive integer")
 
+
 def write(path, data):
     temporary = path.with_suffix(path.suffix + ".tmp")
     temporary.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8", newline="\n")
     temporary.replace(path)
 
 
-def evaluate(args, *, expected_questions=None):
-    from peft import PeftModel
+def outputs_match(output):
+    try:
+        recorded = json.loads((output / CHECKSUMS).read_text(encoding="utf-8"))
+        return (isinstance(recorded, dict) and recorded.keys() == set(ARTIFACTS)
+                and all(digest(output / filename) == recorded[filename] for filename in ARTIFACTS))
+    except (FileNotFoundError, UnicodeError, json.JSONDecodeError):
+        return False
 
-    from opsdmath.training.prompts import prompt
-    from opsdmath.training.rollout import batch_suffixes
+
+def evaluate(args, *, expected_questions=None):
 
     n = expected_questions if expected_questions is not None else len(read_rows(args.data / "inputs.jsonl"))
     rows, labels = validate_rows(args.data / "inputs.jsonl", args.data / "labels.jsonl", n)
@@ -48,13 +56,28 @@ def evaluate(args, *, expected_questions=None):
         identity = dict(protocol, adapter=digest(Path(adapter) / "adapter_model.safetensors") if adapter else None)
         output.mkdir(exist_ok=True)
         manifest = output / "protocol.json"
-        if manifest.exists() and identity != json.loads(manifest.read_text(encoding="utf-8")):
+        try:
+            saved_protocol = json.loads(manifest.read_text(encoding="utf-8"))
+        except (FileNotFoundError, UnicodeError, json.JSONDecodeError):
+            saved_protocol = None
+        if saved_protocol is not None and saved_protocol != identity:
             raise ValueError(f"Evaluation inputs changed for {name}")
-        if (output / "complete.json").exists():
+        if saved_protocol == identity and outputs_match(output):
             continue
+        # Publish a new checksum manifest only after every output is written.
+        (output / CHECKSUMS).unlink(missing_ok=True)
+        (output / "complete.json").unlink(missing_ok=True)
         write(manifest, identity)
+
+        from opsdmath.training.prompts import prompt
+        from opsdmath.training.rollout import batch_suffixes
+
         base, tokenizer = load_eval_model(args.model)
-        model = PeftModel.from_pretrained(base, adapter).eval() if adapter else base
+        model = base
+        if adapter:
+            from peft import PeftModel
+
+            model = PeftModel.from_pretrained(base, adapter).eval()
         traces = []
         for start in range(0, n, args.batch_size):
             batch = rows[start:start + args.batch_size]
@@ -74,5 +97,6 @@ def evaluate(args, *, expected_questions=None):
             metrics[str(cap)], per_item = score(traces, truth, tokenizer, cap)
             write(output / f"score-{cap}.json", per_item)
         write(output / "complete.json", metrics)
+        write(output / CHECKSUMS, {filename: digest(output / filename) for filename in ARTIFACTS})
         print(name, metrics[str(SHORT)]["numeric"], flush=True)
         del model, base
