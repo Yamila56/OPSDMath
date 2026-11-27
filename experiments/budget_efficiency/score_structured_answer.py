@@ -6,7 +6,7 @@ from hashlib import sha256
 from pathlib import Path
 from statistics import mean
 
-from budget_study import uncertainty
+from experiments.budget_efficiency.budget_study import uncertainty
 from opsdmath.data.gsm8k import number, read_rows
 
 

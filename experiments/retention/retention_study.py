@@ -30,7 +30,7 @@ def write_split(folder, rows):
 
 
 def prepare(args):
-    from short_sft_baseline import prepare as prepare_equations
+    from experiments.sft_baselines.short_sft_baseline import prepare as prepare_equations
 
     train = read_rows(args.train)
     original_train, _ = dataset("train", args.source)

@@ -5,8 +5,8 @@ import hashlib
 from pathlib import Path
 
 from opsdmath.data.gsm8k import number, parse_strict_answer, read_rows, write_rows
-from opsd_calibration import load_model, write
-from summarize_run import audit_final_answer
+from experiments.budget_efficiency.opsd_calibration import load_model, write
+from experiments.budget_efficiency.summarize_run import audit_final_answer
 
 SCALES = ("1p7b", "8b")
 CONTEXTS = ("none", "answer", "masked_equations")

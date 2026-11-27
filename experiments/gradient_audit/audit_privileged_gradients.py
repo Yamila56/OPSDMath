@@ -11,8 +11,8 @@ from statistics import mean
 
 from opsdmath.analysis.gradients import gradients, unit_cos
 from opsdmath.data.gsm8k import number, read_rows, write_rows
-from opsd_calibration import load_model, write
-from short_sft_baseline import EQUATIONS
+from experiments.budget_efficiency.opsd_calibration import load_model, write
+from experiments.sft_baselines.short_sft_baseline import EQUATIONS
 
 OPS = {ast.Add: operator.add, ast.Sub: operator.sub, ast.Mult: operator.mul, ast.Div: operator.truediv}
 

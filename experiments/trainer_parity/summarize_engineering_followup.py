@@ -5,8 +5,8 @@ from collections import defaultdict
 from pathlib import Path
 from statistics import mean
 
-from budget_study import uncertainty
-from condition_pairs import cluster_interval
+from experiments.budget_efficiency.budget_study import uncertainty
+from experiments.budget_efficiency.condition_pairs import cluster_interval
 from opsdmath.data.gsm8k import read_rows
 
 

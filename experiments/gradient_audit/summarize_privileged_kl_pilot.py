@@ -8,8 +8,8 @@ from statistics import mean
 import numpy as np
 
 from opsdmath.data.gsm8k import read_rows
-from retention_study import cohort
-from summarize_scale_budget_crossed import interval
+from experiments.retention.retention_study import cohort
+from experiments.budget_efficiency.summarize_scale_budget_crossed import interval
 
 GROUPS = ("base", "clipped", "full")
 

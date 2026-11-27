@@ -7,7 +7,7 @@ from pathlib import Path
 from statistics import mean
 
 from opsdmath.data.gsm8k import read_rows
-from retention_study import cohort
+from experiments.retention.retention_study import cohort
 
 
 def outcome_inputs(path):
@@ -45,7 +45,7 @@ def run(args):
     import torch
     from peft import PeftModel
 
-    from opsd_calibration import load_model
+    from experiments.budget_efficiency.opsd_calibration import load_model
     from opsdmath.training.trainer import completion_logits, prompt
 
     args.output.mkdir(parents=True, exist_ok=False)

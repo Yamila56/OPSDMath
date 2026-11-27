@@ -73,6 +73,8 @@ This CPU command verifies the prediction archive hashes and recomputes the full 
 
 With CUDA-enabled PyTorch, install `.[training]` for config-driven training and inference. `opsdmath-train` takes a selected recipe and seed, a local model, and the prepared training split. `opsdmath-evaluate` scores the locked short and long budgets for named checkpoints. The guide records the model revision, dataset preparation, adapter checksums and exact commands. [Reproduction guide](docs/reproduction.md) · [Archived predictions and configurations](results/scale-transfer/privileged-gradient-audit/kl-pilot)
 
+The [study index](docs/experiments.md) links the gradient audits, trainer checks, budget studies, teacher-context probes, SFT controls, and retention experiments to their runners.
+
 ## References
 
 The training setup follows [Self-Distilled Reasoner](https://proceedings.mlr.press/v306/zhao26be.html). Related work examines [correction reversal under pointwise KL clipping](https://arxiv.org/abs/2609.38995) and [termination behavior in OPSD](https://arxiv.org/abs/2611.19925). The experiments use [Qwen3](https://huggingface.co/Qwen/Qwen3-8B), [GSM8K](https://github.com/openai/grade-school-math), and [SVAMP](https://aclanthology.org/2021.naacl-main.168/).

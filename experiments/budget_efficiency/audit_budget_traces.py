@@ -8,7 +8,7 @@ from pathlib import Path
 from transformers import AutoTokenizer
 
 from opsdmath.data.gsm8k import number, read_rows
-from score_structured_answer import audit
+from experiments.budget_efficiency.score_structured_answer import audit
 
 # Match explicit conclusions rather than every occurrence of the gold number.
 CONCLUSION = re.compile(

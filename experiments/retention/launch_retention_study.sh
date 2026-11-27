@@ -6,6 +6,7 @@ py=$(realpath -s "${1:?environment Python}")
 model=$(realpath "${2:?frozen model directory}")
 root=$(realpath "${3:?run directory containing data}")
 project=$(cd -- "$(dirname -- "$0")" && pwd)
+export PYTHONPATH="$project/../..${PYTHONPATH:+:$PYTHONPATH}"
 cd "$root"
 export HF_HUB_OFFLINE=1 PYTHONUNBUFFERED=1
 anchor=()
@@ -46,7 +47,7 @@ fi
 cat routing/cohort-counts.json
 mkdir -p training
 nvidia-smi --query-gpu=name,memory.total,driver_version --format=csv > gpu.csv
-sha256sum "$trainer" "$study" "$project/short_sft_baseline.py" \
+sha256sum "$trainer" "$study" "$project/../sft_baselines/short_sft_baseline.py" \
     "$project"/../../opsdmath/{training,objectives,evaluation}/*.py > code-sha256.txt
 groups=(base)
 for seed in 17 29; do

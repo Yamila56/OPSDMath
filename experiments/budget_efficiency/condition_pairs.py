@@ -137,7 +137,7 @@ def structural_groups(diffs):
 
 
 def score(args):
-    from score_structured_answer import audit
+    from experiments.budget_efficiency.score_structured_answer import audit
 
     labels = read_rows(args.labels)
     keys = {r["id"] for r in labels}

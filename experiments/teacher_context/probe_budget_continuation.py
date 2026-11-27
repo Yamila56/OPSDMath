@@ -9,7 +9,7 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 from opsdmath.data.gsm8k import NUMBER, dataset, number, parse_answer, parse_strict_answer, read_rows, write_rows
-from short_sft_baseline import EQUATIONS
+from experiments.sft_baselines.short_sft_baseline import EQUATIONS
 
 SHORT, LONG = 128, 512
 CUTS = (32, 64, 96)
@@ -81,7 +81,7 @@ def classify(row, tokens, tokenizer, eos_ids):
 def run(args):
     import torch
 
-    from opsd_calibration import load_model
+    from experiments.budget_efficiency.opsd_calibration import load_model
     from opsdmath.training.trainer import prompt
 
     args.output.mkdir(parents=True, exist_ok=False)

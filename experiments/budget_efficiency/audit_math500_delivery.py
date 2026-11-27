@@ -9,7 +9,7 @@ from math_verify import LatexExtractionConfig, parse, verify
 from transformers import AutoTokenizer
 
 from opsdmath.data.gsm8k import FINAL_MARKER, read_rows, write_rows
-from math500_budget import parse_box
+from experiments.budget_efficiency.math500_budget import parse_box
 
 
 def explicit_final(text, capped):

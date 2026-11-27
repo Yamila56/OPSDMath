@@ -6,4 +6,16 @@ The paired analysis resamples questions and reports seed-specific effects and th
 
 The local logit audit found that clipping would lower EOS log-probability at 32/59 reference endings for frozen 8B, compared with 2/59 for frozen 1.7B. The two 8B adapters gave 26/59 and 22/59. Full KL gave zero such endings in these groups. The audit measures a local derivative. The share of the generation gap attributable to EOS remains open. [Gradient and prediction archives](../results/scale-transfer/privileged-gradient-audit) · [Paired results and checksums](../results/scale-transfer/privileged-gradient-audit/kl-pilot)
 
-Earlier prompt, answer-format and matched-routing studies are available with their [result directories](../results) and [archived runners](../experiments/legacy). [Upstream parity and interrupted-run recovery evidence](trainer_parity.md)
+Earlier prompt, answer-format and matched-routing studies are available with their [result directories](../results) and [study runners](../experiments). [Upstream parity and interrupted-run recovery evidence](trainer_parity.md)
+
+The executable studies are organized by research question.
+
+| Study | Runner directory |
+| --- | --- |
+| Vocabulary-wise clipping, EOS and privileged gradient audits | [gradient_audit](../experiments/gradient_audit) |
+| Upstream numerical parity and interrupted-run recovery | [trainer_parity](../experiments/trainer_parity) |
+| Token budgets, scale transfer and structured scoring | [budget_efficiency](../experiments/budget_efficiency) |
+| Teacher context, continuation and prompt diagnostics | [teacher_context](../experiments/teacher_context) |
+| Equation and full-solution SFT controls | [sft_baselines](../experiments/sft_baselines) |
+| Matched routing and retention | [retention](../experiments/retention) |
+| Environment setup, launchers and historical figure generation | [support](../experiments/support) |

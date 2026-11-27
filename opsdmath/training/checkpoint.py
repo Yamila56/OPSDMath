@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+from pathlib import Path
 
 import torch
 
@@ -12,6 +13,8 @@ def training_identity(args, rows):
         "sft_reference_cap", "teacher_context", "teacher_thinking", "student_thinking", "learning_rate",
         "max_grad_norm", "kl_clip",
     )}
+    identity["fixed_rollout"] = args.fixed_rollout
+    identity["device"] = str(args.device)
     identity["ordered_rows_sha256"] = hashlib.sha256(
         json.dumps(rows, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
     if args.output_budget is not None:
@@ -23,6 +26,22 @@ def training_identity(args, rows):
     if args.unclipped_anchor:
         identity["unclipped_anchor"] = True
     return identity
+
+
+def validate_resume(saved_identity, identity, checkpoint_path):
+    if saved_identity == identity:
+        return
+    if {"fixed_rollout", "device"}.isdisjoint(saved_identity):
+        # Older checkpoints omitted both fields. The saved run config still
+        # distinguishes a fixed-rollout run from an online run.
+        config_path = Path(checkpoint_path).parent / "config.json"
+        if config_path.is_file():
+            config = json.loads(config_path.read_text(encoding="utf-8"))
+            if config.get("fixed_rollout") is False and (
+                saved_identity | {"fixed_rollout": False, "device": config.get("device")}
+            ) == identity:
+                return
+    raise ValueError("Resume requires the original model, data order and training configuration")
 
 
 def save_state(output, adapter, identity, next_index, step, optimizer, scheduler, device):

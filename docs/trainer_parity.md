@@ -1,6 +1,6 @@
 # OPSD implementation and Trainer checks
 
-The single-device implementation uses the objective published by the [Self-Distilled Reasoner authors](https://github.com/siyan-zhao/OPSD) at commit `0622e0ae62eadfa869ad1397a960b44ab7388`. The loss sums forward KL terms after clipping each vocabulary contribution at 0.05. Clipping changes the sign of some summed losses. The training probe logs unclipped KL and the fraction of terms and positions affected by clipping.
+The single-device implementation uses the objective published by the [Self-Distilled Reasoner authors](https://github.com/siyan-zhao/OPSD) at commit `0622e0ae62eadfa869ad1397a960b40044ab7388`. Check out that revision separately and supply its directory via `--upstream` to the parity and recovery runners. The loss sums forward KL terms after clipping each vocabulary contribution at 0.05. Clipping changes the sign of some summed losses. The training probe logs unclipped KL and the fraction of terms and positions affected by clipping.
 
 ## Fixed-update comparison
 
@@ -21,4 +21,11 @@ On TRL 0.26.0 with Transformers generation, the deterministic two-update test pr
 
 An expanded run uses 32 GSM8K examples, four microsteps per update, eight optimizer updates, and a 16-token rollout cap. After restarting at update four, the deterministic run matches all 32 prompt and rollout hashes and all 392 LoRA tensors at updates four and eight. This verifies accumulated recovery for the tested upstream Trainer and Transformers path.
 
-[Fixed-update implementation](../experiments/legacy/check_trainer_update.py) · [Online recovery script](../experiments/legacy/smoke_upstream_trainer.py) · [Numerical results](../results/condition-study/engineering-followup.json)
+Run the checks from the checkout root with the pinned upstream environment. The fixed-update test consumes its starting adapter and matching token-ID trajectories. For the recovery test, run once to save the midpoint checkpoint, again with `--resume` in the same directory, then with `--uninterrupted` and a separate output directory.
+
+```bash
+python -m experiments.trainer_parity.check_trainer_update --help
+python -m experiments.trainer_parity.smoke_upstream_trainer --help
+```
+
+[Fixed-update implementation](../experiments/trainer_parity/check_trainer_update.py) · [Online recovery script](../experiments/trainer_parity/smoke_upstream_trainer.py) · [Numerical results](../results/condition-study/engineering-followup.json)

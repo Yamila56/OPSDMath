@@ -9,7 +9,7 @@ shift 3
 py=${OPSD_PYTHON:-python}
 mkdir -p "$output"
 if [[ ! -f "$output/equations/train.jsonl" ]]; then
-    "$py" experiments/legacy/short_sft_baseline.py prepare "$training" "$output/equations" --target equations
+    "$py" -m experiments.sft_baselines.short_sft_baseline prepare "$training" "$output/equations" --target equations
 fi
 
 for group in "$@"; do

@@ -41,18 +41,13 @@ def train():
     if ids_hash != cfg["ordered_ids_sha256"]:
         parser.error("The order or membership of the training split differs from the reference")
     verified_file(args.model / "model.safetensors.index.json", cfg["model_index_sha256"])
-    command = [cfg["mode"], "--model", str(args.model), "--data", str(args.data),
-               "--output", str(args.output), "--seed", str(args.seed)]
-    for name, value in (cfg["arguments"] | seed).items():
-        option = f"--{name.replace('_', '-')}"
-        if isinstance(value, bool):
-            if value:
-                command.append(option)
-        elif value is not None or name == "kl_clip":
-            command.extend((option, str(value) if value is not None else "none"))
-
+    from opsdmath.training.arguments import reference_arguments
     from opsdmath.training.trainer import main
 
+    try:
+        command = reference_arguments(cfg, seed, args, len(rows))
+    except ValueError as error:
+        parser.error(str(error))
     main(command)
 
 

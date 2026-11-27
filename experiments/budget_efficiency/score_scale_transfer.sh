@@ -29,6 +29,6 @@ for seed in 17 29; do
         fi
     done
 done
-"$py" experiments/legacy/condition_pairs.py score "$labels" "$run/$suffix-conditions.json" "${inputs[@]}" --compare "${contrasts[@]}"
+"$py" -m experiments.budget_efficiency.condition_pairs score "$labels" "$run/$suffix-conditions.json" "${inputs[@]}" --compare "${contrasts[@]}"
 "$py" eval_scale_transfer.py summarize --run "$run" --condition "$run/$suffix-conditions.json" \
     --output "$run/$suffix.json" --groups "$@"

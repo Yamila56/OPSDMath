@@ -52,7 +52,7 @@ def probe(args):
     import torch.nn.functional as F
 
     from opsdmath.training.trainer import ROLLOUT_TEMPERATURE, batch_suffixes, completion_logits, prompt
-    from summarize_run import audit_final_answer
+    from experiments.budget_efficiency.summarize_run import audit_final_answer
 
     rows = read_rows(args.data)
     if len({row["id"] for row in rows}) != len(rows) or not rows:
@@ -118,7 +118,7 @@ def evaluate(args):
 
     from opsdmath.evaluation.budget import score, validate_rows
     from opsdmath.training.trainer import batch_suffixes, prompt
-    from score_structured_answer import audit
+    from experiments.budget_efficiency.score_structured_answer import audit
     from opsdmath.evaluation.structured import generate
 
     def digest(path):

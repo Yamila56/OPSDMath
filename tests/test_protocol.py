@@ -2,6 +2,7 @@ from argparse import Namespace
 from fractions import Fraction
 
 import numpy as np
+import pytest
 import torch
 
 from opsdmath.analysis.gradients import gradients
@@ -9,7 +10,8 @@ from opsdmath.evaluation.answer_parser import audit_final_answer, parse_strict_a
 from opsdmath.evaluation.budget import score
 from opsdmath.evaluation.metrics import interval
 from opsdmath.objectives.kl import DEFAULT_KL_CLIP, ROLLOUT_TEMPERATURE, check_loss, distillation_loss
-from opsdmath.training.checkpoint import save_state, training_identity
+from opsdmath.training.arguments import reference_arguments
+from opsdmath.training.checkpoint import save_state, training_identity, validate_resume
 from opsdmath.training.prompts import prompt
 
 
@@ -68,6 +70,19 @@ def test_checkpoint_save_and_resume_identity(tmp_path):
     first, second = {"id": "a"}, {"id": "b"}
     identity = training_identity(args, [first, second])
     assert identity != training_identity(args, [second, first])
+    fixed = training_identity(Namespace(**(vars(args) | {"fixed_rollout": True})), [first, second])
+    assert fixed["fixed_rollout"] is True
+    assert identity["fixed_rollout"] is False
+    with pytest.raises(ValueError, match="original model"):
+        validate_resume(fixed, identity, tmp_path / "train-state.pt")
+
+    old = {key: value for key, value in identity.items() if key not in ("device", "fixed_rollout")}
+    (tmp_path / "config.json").write_text(json.dumps({"fixed_rollout": False, "device": "cuda"}))
+    validate_resume(old, identity, tmp_path / "train-state.pt")
+    (tmp_path / "config.json").write_text(json.dumps({"fixed_rollout": True, "device": "cuda"}))
+    with pytest.raises(ValueError, match="original model"):
+        validate_resume(old, identity, tmp_path / "train-state.pt")
+
     parameter = torch.nn.Parameter(torch.tensor(1.))
     optimizer = torch.optim.AdamW([parameter], lr=args.learning_rate)
     scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lambda _: 1)
@@ -82,3 +97,28 @@ def test_checkpoint_save_and_resume_identity(tmp_path):
     optimizer.load_state_dict(state["optimizer"])
     scheduler.load_state_dict(state["scheduler"])
     assert scheduler.last_epoch == 1
+
+
+@pytest.mark.parametrize("recipe", ["opsd_8b_full_kl", "opsd_8b_clipped_kl", "equation_sft_8b"])
+def test_recipe_matches_trainer(recipe):
+    import json
+    from pathlib import Path
+
+    path = Path(__file__).resolve().parents[1] / f"configs/{recipe}.json"
+    config = json.loads(path.read_bytes())
+    for seed in (17, 29):
+        paths = Namespace(model="model", data="data", output="out", seed=seed)
+        overrides = config["seeds"][str(seed)]
+        command = reference_arguments(config, overrides, paths, 256)
+        assert command[0] == config["mode"]
+        if "kl_clip" in config["arguments"]:
+            clip = config["arguments"]["kl_clip"]
+            assert command[command.index("--kl-clip") + 1] == ("none" if clip is None else str(clip))
+    with pytest.raises(ValueError, match="Recorded updates"):
+        reference_arguments(config | {"updates": 65}, overrides, paths, 256)
+    if config["mode"] == "opsd":
+        with pytest.raises(ValueError, match="Recorded rollout_top_p"):
+            reference_arguments(config | {"rollout_top_p": .8}, overrides, paths, 256)
+        with pytest.raises(ValueError, match="does not match"):
+            bad = config | {"arguments": config["arguments"] | {"unused_flag": False}}
+            reference_arguments(bad, overrides, paths, 256)

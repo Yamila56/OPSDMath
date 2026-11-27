@@ -7,7 +7,7 @@ import torch
 from peft import get_peft_model
 
 from opsdmath.data.gsm8k import read_rows
-from opsd_calibration import load_model
+from experiments.budget_efficiency.opsd_calibration import load_model
 from opsdmath.training.trainer import (check_loss, completion_logits, distillation_loss, fixed_teacher_logits,
                       lora_config, prompt, rollout)
 

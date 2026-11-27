@@ -90,7 +90,7 @@ def evaluation(phase):
     if not (scores / "metrics.csv").exists():
         if scores.exists():
             scores.rename(scores.with_name(f"score-interrupted-{time.time_ns()}"))
-        call("experiments/legacy/budget_study.py", "report", "model", labels, scores, *estimates)
+        call("-m", "experiments.budget_efficiency.budget_study", "report", "model", labels, scores, *estimates)
 
 
 def train():

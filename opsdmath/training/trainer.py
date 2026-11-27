@@ -1,25 +1,22 @@
 """Single-device Qwen3 short-answer SFT and on-policy self-distillation."""
 
-import argparse
 import hashlib
 import importlib.util
 import json
-import math
 import random
 import time
 from pathlib import Path
 
 import torch
 import torch.nn.functional as F
-from peft import LoraConfig, PeftModel, get_peft_model
-from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from opsdmath.evaluation.answer_parser import number
+from opsdmath.evaluation.answer_parser import audit_final_answer, number
 from opsdmath.io import read_rows, write_rows
-from opsdmath.evaluation.answer_parser import audit_final_answer
 
 from opsdmath.objectives.kl import DEFAULT_KL_CLIP, ROLLOUT_TEMPERATURE, check_loss, distillation_loss
-from opsdmath.training.checkpoint import save_state, training_identity
+from opsdmath.training.arguments import trainer_parser, training_rows
+from opsdmath.training.checkpoint import save_state, training_identity, validate_resume
+from opsdmath.training.modeling import load_model, load_tokenizer, lora_config
 from opsdmath.training.prompts import BRIEF_CONTEXTS, EQUATIONS, INSTRUCTION, prompt, teacher_context
 from opsdmath.training.rollout import batch_suffixes, completion_logits, fixed_teacher_logits, rollout
 
@@ -59,33 +56,28 @@ def check_prompts(tokenizer, row, output, context):
          "official_collator_fields": sorted(official)}, output)
 
 
-def lora_config(rank):
-    return LoraConfig(
-        r=rank, lora_alpha=2 * rank, task_type="CAUSAL_LM",
-        target_modules=["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
-    )
-
-
 def train(args, model, tokenizer, rows, device):
+    from peft import PeftModel, get_peft_model
+
     state = torch.load(args.resume_from, weights_only=True, map_location="cpu") if args.resume_from else None
+    random.Random(args.data_seed if args.data_seed is not None else args.seed).shuffle(rows)
+    identity = training_identity(args, rows)
+    if state:
+        validate_resume(state["identity"], identity, args.resume_from)
     model = (PeftModel.from_pretrained(model, args.resume_from.parent / state["adapter"], is_trainable=True)
              if state else get_peft_model(model, lora_config(args.rank)))
     model.gradient_checkpointing_enable(gradient_checkpointing_kwargs={"use_reentrant": False})
     parameters = [parameter for parameter in model.parameters() if parameter.requires_grad]
     optimizer = torch.optim.AdamW(parameters, lr=args.learning_rate)
-    random.Random(args.data_seed if args.data_seed is not None else args.seed).shuffle(rows)
     steps = (len(rows) + args.accumulation - 1) // args.accumulation
     scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lambda step: max(0, 1 - step / steps))
     def student_prompt(row):
         return prompt(tokenizer, row, output_budget=args.output_budget, thinking=args.student_thinking)
 
     first = 0
-    identity = training_identity(args, rows)
     if args.rollout_seed is not None:
         torch.manual_seed(args.rollout_seed)
     if state:
-        if state["identity"] != identity:
-            raise ValueError("Resume requires the original model, data order and training configuration")
         first = state["next_index"]
         optimizer.load_state_dict(state["optimizer"])
         scheduler.load_state_dict(state["scheduler"])
@@ -217,6 +209,8 @@ def train(args, model, tokenizer, rows, device):
 
 def predict(args, model, tokenizer, rows, device):
     if args.adapter:
+        from peft import PeftModel
+
         model = PeftModel.from_pretrained(model, args.adapter)
     predictions = []
     for index in range(0, len(rows), args.batch_size):
@@ -242,98 +236,23 @@ def predict(args, model, tokenizer, rows, device):
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("mode", choices=["opsd", "sft", "predict", "check-loss"])
-    parser.add_argument("--model", type=Path)
-    parser.add_argument("--data", type=Path)
-    parser.add_argument("--output", type=Path)
-    parser.add_argument("--device", default="cuda")
-    parser.add_argument("--limit", type=int)
-    parser.add_argument("--seed", type=int, default=17)
-    for seed in ("init", "data", "rollout"):
-        parser.add_argument(f"--{seed}-seed", type=int)
-    parser.add_argument("--learning-rate", type=float, default=5e-6)
-    parser.add_argument("--max-grad-norm", type=float, default=0.1)
-    parser.add_argument("--kl-clip", type=lambda value: None if value == "none" else float(value), default=DEFAULT_KL_CLIP)
-    parser.add_argument("--student-thinking", action="store_true")
-    parser.add_argument("--teacher-thinking", action="store_true")
-    parser.add_argument("--save-steps", nargs="+", type=int, default=[])
-    parser.add_argument("--resume-from", type=Path)
-    parser.add_argument("--log-diagnostics", action="store_true")
-    parser.add_argument("--rank", type=int, default=64)
-    parser.add_argument("--accumulation", type=int, default=4)
-    parser.add_argument("--rollout-batch-size", type=int,
-                        help="Maximum simultaneous generations for online OPSD within one optimizer step.")
-    parser.add_argument("--batch-size", type=int, default=1, help="Left-padded prediction batch size.")
-    parser.add_argument("--cap", type=int, default=256)
-    parser.add_argument("--output-budget", type=int, help="Advertise a common output budget in both training prompts.")
-    parser.add_argument("--sft-reference-cap", type=int, default=320)
-    parser.add_argument("--probe", action="store_true")
-    parser.add_argument("--teacher-context", choices=["full", "equations", "answer", "none", *BRIEF_CONTEXTS], default="full")
-    parser.add_argument("--teacher-routing", type=Path, help="An exact training-ID map to answer or none.")
-    parser.add_argument("--unclipped-anchor", action="store_true",
-                        help="Use the true KL for unprivileged teacher rows and retain clipping for privileged rows.")
-    parser.add_argument("--fixed-rollout", action="store_true")
-    parser.add_argument("--save-token-ids", action="store_true")
-    parser.add_argument("--adapter", type=Path)
-    parser.add_argument("--prediction-name", default="base", choices=["base", "sft", "opsd"])
+    parser = trainer_parser()
     args = parser.parse_args(argv)
     check_loss()
     if args.mode == "check-loss":
         print("Forward KL, clipping, zero KL and gradient checks passed.")
         return
-    if not (args.model and args.data and args.output) or min(
-        args.cap, args.sft_reference_cap, args.accumulation, args.rank, args.batch_size,
-    ) < 1:
-        parser.error("Provide --model, --data and --output and use positive generation and adapter sizes.")
+    rows = training_rows(parser, args)
     checker = args.mode != "predict"
-    rows = read_rows(args.data)[:args.limit]
-    if args.output_budget is not None and (not checker or args.output_budget <= 0):
-        parser.error("--output-budget requires a positive training prompt budget.")
-    if args.unclipped_anchor and args.mode != "opsd":
-        parser.error("--unclipped-anchor is available for OPSD only.")
-    if args.rollout_batch_size is not None and (args.rollout_batch_size < 1 or
-                                                args.mode != "opsd" or args.fixed_rollout):
-        parser.error("--rollout-batch-size requires a positive size and online OPSD.")
-    args.teacher_by_id = None
-    if args.teacher_routing:
-        if args.mode != "opsd" or args.probe or args.teacher_context != "answer":
-            parser.error("--teacher-routing requires answer-only OPSD without --probe.")
-        args.teacher_by_id = json.loads(args.teacher_routing.read_text(encoding="utf-8"))
-        ids = {row["id"] for row in rows}
-        if (not isinstance(args.teacher_by_id, dict) or len(ids) != len(rows)
-                or args.teacher_by_id.keys() != ids or any(v not in ("answer", "none") for v in args.teacher_by_id.values())):
-            parser.error("Every distinct training ID needs an answer or none routing entry.")
-    if any(not math.isfinite(x) or x <= 0 for x in (args.learning_rate, args.max_grad_norm)
-           + (() if args.kl_clip is None else (args.kl_clip,))):
-        parser.error("Learning rate, gradient norm and a numeric KL clip must be finite and positive.")
-    if args.resume_from and (args.fixed_rollout or not checker):
-        parser.error("Resume is available for online OPSD and SFT training.")
-    if set(args.save_steps) - set(range(1, (len(rows)+args.accumulation-1)//args.accumulation+1)):
-        parser.error("Checkpoint steps must be within the training run.")
-    brief_training = args.mode == "opsd" and args.teacher_context in BRIEF_CONTEXTS
-    required = {"id", "problem"}
-    if brief_training:
-        required.add(args.teacher_context)
-    elif args.mode == "sft" or args.teacher_context != "none":
-        required.add("solution")
-    if args.mode == "opsd" and (args.log_diagnostics or args.teacher_context in ("answer", "equations")):
-        required.add("answer")
-    if not rows or (checker and any(not required <= row.keys() for row in rows)):
-        parser.error("Pass a nonempty dataset with reference solutions for training.")
     args.output.mkdir(parents=True, exist_ok=False)
     (args.output / "config.json").write_text(json.dumps(vars(args), default=str, indent=2), encoding="utf-8")
     torch.manual_seed(args.init_seed if args.init_seed is not None else args.seed)
     device = torch.device(args.device)
     start = time.perf_counter()
-    tokenizer = AutoTokenizer.from_pretrained(args.model, local_files_only=True)
-    if args.probe and checker and not brief_training and args.teacher_context != "none":
+    tokenizer = load_tokenizer(args.model)
+    if args.probe and checker and args.teacher_context not in (*BRIEF_CONTEXTS, "none"):
         check_prompts(tokenizer, rows[0], args.output, args.teacher_context)
-    model = AutoModelForCausalLM.from_pretrained(
-        args.model, dtype=torch.bfloat16 if device.type == "cuda" else torch.float32,
-        device_map={"": str(device)}, attn_implementation="sdpa", local_files_only=True,
-    )
-    model.generation_config.pad_token_id = tokenizer.pad_token_id
+    model = load_model(args.model, tokenizer, device)
     synchronize(device)
     log({"event": "loaded", "seconds": time.perf_counter() - start, **memory(device)}, args.output)
     if checker:

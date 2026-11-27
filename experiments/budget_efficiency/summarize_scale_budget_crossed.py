@@ -9,8 +9,8 @@ import numpy as np
 from opsdmath.evaluation.metrics import interval
 
 from opsdmath.data.gsm8k import number, read_rows
-from opsd_calibration import PROMPTS, write
-from score_structured_answer import audit
+from experiments.budget_efficiency.opsd_calibration import PROMPTS, write
+from experiments.budget_efficiency.score_structured_answer import audit
 
 SEEDS = (17, 29)
 BUDGETS = (64, 96, 128, 160, 192, 224, 256, 384, 512)

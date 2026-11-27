@@ -8,7 +8,7 @@ from pathlib import Path
 from statistics import mean, median
 
 from opsdmath.data.gsm8k import dataset, number, parse_answer, parse_strict_answer, read_rows, write_rows
-from summarize_run import audit_final_answer, write_csv
+from experiments.budget_efficiency.summarize_run import audit_final_answer, write_csv
 
 BUDGETS = (64, 128, 256, 512)
 PARSERS = {"numeric": audit_final_answer, "original": parse_answer, "strict": parse_strict_answer}

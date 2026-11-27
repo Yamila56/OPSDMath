@@ -5,8 +5,12 @@ import torch
 from opsdmath.objectives.kl import ROLLOUT_TEMPERATURE
 
 
+ROLLOUT_TOP_P = 0.95
+ROLLOUT_TOP_K = 20
+
+
 def rollout(model, ids, cap, sample, attention_mask=None):
-    generation = {"temperature": ROLLOUT_TEMPERATURE, "top_p": 0.95, "top_k": 20} if sample else {
+    generation = {"temperature": ROLLOUT_TEMPERATURE, "top_p": ROLLOUT_TOP_P, "top_k": ROLLOUT_TOP_K} if sample else {
         "temperature": None, "top_p": None, "top_k": None,
     }
     model.eval()

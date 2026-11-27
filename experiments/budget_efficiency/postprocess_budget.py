@@ -5,9 +5,9 @@ from collections import defaultdict
 from pathlib import Path
 from statistics import mean
 
-from budget_study import BUDGETS, PARSERS, uncertainty
+from experiments.budget_efficiency.budget_study import BUDGETS, PARSERS, uncertainty
 from opsdmath.data.gsm8k import read_rows
-from summarize_run import write_csv
+from experiments.budget_efficiency.summarize_run import write_csv
 
 COMPARISONS = (("equation", "answer"), ("equation", "online"), ("online", "fixed"), ("online", "sft"))
 
